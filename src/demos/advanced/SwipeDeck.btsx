@@ -15,11 +15,15 @@ module
 setup const [top, setTop] = useState(0);
 setup const [dx, setDx] = useState(0);
 setup const [kept, setKept] = useState(0);
+setup const [returning, setReturning] = useState(false);
 setup const startX = useRef<number | null>(null);
 setup
   // `top` is an ever-increasing position, so each card keeps a unique key and
   // leaving the deck is a real unmount — which is what triggers `exit`.
-  const visible = [0, 1, 2].map((offset) => ({ position: top + offset, card: DECK[(top + offset) % DECK.length] }));
+  // Rendered back-to-front: view-transition snapshots ignore z-index, and
+  // cards that stay in the deck stack in paint order. (The new back card is
+  // layered underneath by its `deck-in` class.)
+  const visible = [2, 1, 0].map((offset) => ({ position: top + offset, card: DECK[(top + offset) % DECK.length] }));
   const dismiss = (direction: Direction) => startTransition(() => {
     addTransitionType(direction);
     if (direction === "right") setKept((value) => value + 1);
@@ -28,6 +32,7 @@ setup
   });
   const onDown = (event: PointerEvent) => {
     startX.current = event.clientX;
+    setReturning(false);
     (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
   };
   const onMove = (event: PointerEvent) => {
@@ -36,22 +41,28 @@ setup
   const onUp = () => {
     startX.current = null;
     if (Math.abs(dx) > THRESHOLD) dismiss(dx > 0 ? "right" : "left");
-    else setDx(0);
+    else {
+      // Only a released drag springs back with a CSS transition; a promoted
+      // card must not animate its own transform while the swap is running.
+      setReturning(true);
+      setDx(0);
+    }
   };
 
 div(className="flex w-full flex-col items-center gap-6")
   div(className="relative h-72 w-56")
     each item in visible key item.position
-      ViewTransition(name={`a-deck-${item.position}`} exit={FLING} enter="fade" update="glide")
+      ViewTransition(name={`a-deck-${item.position}`} exit={FLING} enter="deck-in" update="deck-up")
         article(
           ~ className={`art ${item.card.art} absolute inset-0 flex touch-none flex-col justify-end rounded-[1.5rem] p-5 text-white shadow-[0_24px_48px_rgba(0,0,0,0.35)] select-none ${item.position === top ? "cursor-grab active:cursor-grabbing" : ""}`}
           ~ style={item.position === top
-          ~   ? { transform: `translateX(${dx}px) rotate(${dx / 14}deg)`, transition: startX.current === null ? "transform 240ms ease" : "none", zIndex: 3 }
+          ~   ? { transform: `translateX(${dx}px) rotate(${dx / 14}deg)`, transition: returning ? "transform 240ms ease" : "none", zIndex: 3 }
           ~   : { transform: `translateY(${(item.position - top) * 14}px) scale(${1 - (item.position - top) * 0.06})`, zIndex: 3 - (item.position - top) }}
           ~ onPointerDown={item.position === top ? onDown : undefined}
           ~ onPointerMove={item.position === top ? onMove : undefined}
           ~ onPointerUp={item.position === top ? onUp : undefined}
           ~ onPointerCancel={item.position === top ? onUp : undefined}
+          ~ onTransitionEnd={item.position === top ? () => setReturning(false) : undefined}
           ~ )
           h3(className="m-0 text-3xl font-medium tracking-[-0.04em]") #{item.card.title}
           p(className="m-0 text-sm opacity-80") #{item.card.place}

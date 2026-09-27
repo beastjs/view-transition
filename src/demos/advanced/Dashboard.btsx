@@ -1,58 +1,160 @@
-import { ViewTransition, startTransition, useState } from "octane";
+import { ViewTransition, addTransitionType, startTransition, useState } from "octane";
 module
-  type Layout = "grid" | "list";
-  interface Widget { id: string; label: string; value: string; delta: string }
-  const WIDGETS: Widget[] = [
-    { id: "visits", label: "visits", value: "48.2k", delta: "+12%" },
-    { id: "orders", label: "orders", value: "1,904", delta: "+4%" },
-    { id: "aov", label: "avg. order", value: "€86", delta: "−1%" },
-    { id: "nps", label: "nps", value: "71", delta: "+6" }
-  ];
-  const NAV = [{ icon: "◐", label: "overview" }, { icon: "▤", label: "reports" }, { icon: "◎", label: "goals" }];
-
-  // Wait for the running document transition to finish before starting the
-  // next phase, so each phase gets its own complete animation.
-  async function settle() {
-    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-    const active = (document as Document & { activeViewTransition?: { finished: Promise<void> } | null }).activeViewTransition;
-    if (active) await active.finished.catch(() => {});
-    else await new Promise((resolve) => setTimeout(resolve, document.documentElement.classList.contains("slowmo") ? 1900 : 480));
+  type Layout = "grid" | "list" | "table";
+  interface Provider {
+    id: string
+    name: string
+    model: string
+    context: string
+    speed: string
+    price: string
+    delta: string
+    modes: string[]
   }
+  // Sample figures for the demo — illustrative, not benchmarks.
+  const PROVIDERS: Provider[] = [
+    { id: "anthropic", name: "Anthropic", model: "Claude", context: "200k", speed: "78 tok/s", price: "$3.00", delta: "+14%", modes: ["text", "vision", "tool use"] },
+    { id: "openai", name: "OpenAI", model: "GPT", context: "128k", speed: "92 tok/s", price: "$2.50", delta: "+9%", modes: ["text", "vision", "audio"] },
+    { id: "google", name: "Google", model: "Gemini", context: "1M", speed: "110 tok/s", price: "$1.25", delta: "+11%", modes: ["text", "vision", "video"] },
+    { id: "meta", name: "Meta", model: "Llama", context: "128k", speed: "140 tok/s", price: "$0.60", delta: "−2%", modes: ["text", "open weights"] }
+  ];
+  const NAV = [{ icon: "◇", label: "providers" }, { icon: "▦", label: "data center" }, { icon: "ϟ", label: "energy" }];
+  const LAYOUTS: Layout[] = ["grid", "list", "table"];
+
+  // One set of provider elements, three arrangements plus a details view.
+  // The names never change, so every switch is the same panels and text
+  // travelling to new places.
+  const AREA: Record<Layout, string> = {
+    grid: "grid-cols-2 grid-rows-2",
+    list: "grid-cols-1 grid-rows-4",
+    // the table owns the columns (six on wider screens, three on phones):
+    // provider takes the rest, the others size to their widest entry
+    table: "grid-cols-[minmax(0,1fr)_auto_auto] sm:grid-cols-[minmax(0,1fr)_auto_auto_auto_auto_auto] gap-x-2 sm:gap-x-3 grid-rows-[auto_repeat(4,minmax(0,1fr))]"
+  };
+  // header and rows borrow the table's columns through subgrid
+  const TABLE_COLUMNS = "col-span-3 sm:col-span-6 grid grid-cols-subgrid items-center px-3 sm:px-4";
+  // Opening details unfolds the panel over the whole area; closing folds it
+  // back into its card or row; a layout switch just stretches it.
+  const PANEL = { open: "unfold round-12", close: "fold round-12", default: "stretch round-12" };
+  const trendColor = (delta: string) => (delta.startsWith("+") ? "text-accent" : "text-muted");
+
+  interface FieldProps { name: string; text: string; className?: string; role?: string }
+
+// A piece of text that keeps its name everywhere it appears, so it zooms and
+// travels between layouts (share when its parent swaps markup, update when it
+// only moves). Where it has no counterpart it simply fades in or out.
+component Field
+  props { name, text, className = "", role }: FieldProps
+  ViewTransition(name={name} share="text-zoom" update="text-zoom" enter="fade" exit="fade")
+    span(role={role} className={`w-fit ${className}`}) #{text}
 
 setup const [layout, setLayout] = useState<Layout>("grid");
-setup const [collapsed, setCollapsed] = useState(false);
-setup const [phase, setPhase] = useState("idle");
+setup const [compact, setCompact] = useState(false);
+setup const [selected, setSelected] = useState<string | null>(null);
 setup
-  // Three transitions, run in sequence: make room, reflow, restore.
-  const orchestrate = async (next: Layout) => {
-    if (next === layout || phase !== "idle") return;
-    startTransition(() => { setCollapsed(true); setPhase("1 · collapse sidebar"); });
-    await settle();
-    startTransition(() => { setLayout(next); setPhase("2 · reflow widgets"); });
-    await settle();
-    startTransition(() => { setCollapsed(false); setPhase("3 · restore sidebar"); });
-    await settle();
-    startTransition(() => setPhase("idle"));
+  // A layout switch is a view transition: the same providers travel to new places.
+  const switchLayout = (next: Layout) => {
+    if (next !== layout) startTransition(() => setLayout(next));
   };
+  // Details are a view transition too: the chosen panel unfolds over the area.
+  const select = (id: string | null) => startTransition(() => {
+    addTransitionType(id === null ? "close" : "open");
+    setSelected(id);
+  });
+  const openOnKey = (event: KeyboardEvent, id: string) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      select(id);
+    }
+  };
+  // The sidebar is not. Its width is a plain CSS transition, and the content
+  // column simply follows it through layout, frame by frame — nothing is
+  // snapshotted, so nothing is stretched or doubled. (A plain state update, so
+  // Octane never starts a view transition for it.)
+  const toggleCompact = () => setCompact((value) => !value);
 
 div(className="flex w-full flex-col gap-4")
   div(className="flex flex-wrap items-center gap-2")
-    button.vt-btn(type="button" aria-pressed={layout === "grid"} disabled={phase !== "idle"} onClick={() => orchestrate("grid")}) grid
-    button.vt-btn(type="button" aria-pressed={layout === "list"} disabled={phase !== "idle"} onClick={() => orchestrate("list")}) list
-    ViewTransition(name="a-dash-phase" update="fade")
-      span(role="status" className="pl-2 font-mono text-xs text-muted") #{phase}
-  div(className="flex min-h-72 gap-3 rounded-[1.25rem] bg-paper p-3")
-    ViewTransition(name="a-dash-side" update="glide")
-      aside(className={`flex shrink-0 flex-col gap-1 overflow-hidden rounded-xl bg-panel-2 p-2 ${collapsed ? "w-12" : "w-28 sm:w-36"}`})
-        each item in NAV key item.label
-          div(className="flex items-center gap-3 rounded-lg px-2 py-2 text-sm")
-            span(className="w-4 text-center") #{item.icon}
-            if !collapsed
-              span #{item.label}
-    div(className={`grid flex-1 content-start gap-3 ${layout === "grid" ? "grid-cols-2" : "grid-cols-1"}`})
-      each widget in WIDGETS key widget.id
-        ViewTransition(name={`a-widget-${widget.id}`} update="glide")
-          article(className={`min-w-0 rounded-xl bg-panel-2 p-4 ${layout === "grid" ? "flex flex-col gap-3" : "flex items-baseline justify-between gap-3"}`})
-            span.eyebrow #{widget.label}
-            span(className={`font-medium tracking-[-0.04em] ${layout === "grid" ? "text-2xl sm:text-3xl" : "text-xl"}`}) #{widget.value}
-            span(className={`font-mono text-xs ${widget.delta.startsWith("+") ? "text-accent" : "text-muted"}`}) #{widget.delta}
+    each option in LAYOUTS key option
+      button.vt-btn(type="button" aria-pressed={layout === option} onClick={() => switchLayout(option)}) #{option}
+    span(className="mx-2 h-6 w-px bg-line")
+    button.vt-btn(type="button" aria-pressed={compact} aria-controls="a-dash-side" onClick={toggleCompact}) compact
+    span(className="ml-auto font-mono text-[0.68rem] text-muted") sample figures
+  // A fixed height that every view fills exactly, so switching never resizes the frame.
+  div(className="flex h-76 gap-3 rounded-[1.25rem] bg-paper p-3")
+    // Labels are always rendered and never wrap; the aside clips them, so they
+    // are covered and revealed smoothly as the width animates. On phones it is
+    // always the icon rail — the content needs the room.
+    aside#a-dash-side(aria-label="Sections" className={`flex shrink-0 flex-col gap-1 self-start overflow-hidden rounded-xl bg-panel-2 p-2 transition-[width] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${compact ? "w-12" : "w-12 sm:w-36"}`})
+      each item in NAV key item.label
+        div(className="flex items-center gap-3 rounded-lg px-2 py-2 text-sm")
+          span(className="w-4 shrink-0 text-center") #{item.icon}
+          span(aria-hidden={compact} className={`whitespace-nowrap transition-opacity duration-300 ${compact ? "opacity-0" : "opacity-0 sm:opacity-100"}`}) #{item.label}
+    div(role={layout === "table" && !selected ? "table" : undefined} aria-label={layout === "table" && !selected ? "Providers" : undefined} className={`grid min-w-0 flex-1 gap-3 ${AREA[layout]}`})
+      // The header row exists only as a table overview: it rises in, and fades out.
+      if layout === "table" && !selected
+        ViewTransition(enter="rise" exit="fade")
+          div(role="row" className={`${TABLE_COLUMNS} pt-1 font-mono text-[0.68rem] text-muted`})
+            span(role="columnheader") provider
+            span(role="columnheader" className="hidden sm:block") model
+            span(role="columnheader" className="justify-self-end") context
+            span(role="columnheader" className="hidden justify-self-end sm:block") speed
+            span(role="columnheader" className="hidden justify-self-end sm:block") price
+            // "Δ" on narrow screens; the full word is the accessible name everywhere.
+            span(role="columnheader" aria-label="trend" className="justify-self-end")
+              span(className="sm:hidden") Δ
+              span(className="hidden sm:inline") trend
+      each p in PROVIDERS key p.id
+        // One persistent boundary per provider. Its markup swaps between card,
+        // row, table row and details, so the named text inside shares across
+        // the swap; the others sink away while one provider is open.
+        ViewTransition(name={`a-p-${p.id}`} update={PANEL} enter="rise" exit="sink")
+          if selected === p.id
+            article(className="col-span-full row-span-full flex min-w-0 flex-col gap-3 rounded-xl bg-panel-2 p-4 sm:gap-4 sm:p-5")
+              div(className="flex items-start justify-between gap-3")
+                div(className="flex min-w-0 flex-wrap items-baseline gap-x-3")
+                  Field(name={`a-p-name-${p.id}`} text={p.name} className="text-xl font-medium tracking-[-0.03em] sm:text-2xl")
+                  Field(name={`a-p-model-${p.id}`} text={p.model} className="text-sm text-muted")
+                ViewTransition(enter="fade" exit="fade")
+                  button.vt-btn(type="button" aria-label="all providers" className="min-h-0 shrink-0 px-3 py-1.5 text-xs" onClick={() => select(null)})
+                    span(aria-hidden="true") ←
+                    span(aria-hidden="true" className="hidden sm:inline") all providers
+              div(className="grid grid-cols-2 gap-2 sm:grid-cols-4")
+                div(className="flex flex-col gap-1 rounded-lg bg-panel p-2 sm:p-3")
+                  span.eyebrow context
+                  Field(name={`a-p-value-${p.id}`} text={p.context} className="whitespace-nowrap text-lg font-medium tracking-[-0.03em] sm:text-xl")
+                div(className="flex flex-col gap-1 rounded-lg bg-panel p-2 sm:p-3")
+                  span.eyebrow speed
+                  Field(name={`a-p-speed-${p.id}`} text={p.speed} className="whitespace-nowrap font-mono text-xs sm:text-sm")
+                div(className="flex flex-col gap-1 rounded-lg bg-panel p-2 sm:p-3")
+                  span.eyebrow price
+                    span(className="hidden normal-case sm:inline") &nbsp;/ Mtok
+                  Field(name={`a-p-price-${p.id}`} text={p.price} className="whitespace-nowrap font-mono text-xs sm:text-sm")
+                div(className="flex flex-col gap-1 rounded-lg bg-panel p-2 sm:p-3")
+                  span.eyebrow trend
+                  Field(name={`a-p-delta-${p.id}`} text={p.delta} className={`whitespace-nowrap font-mono text-xs sm:text-sm ${trendColor(p.delta)}`})
+              // Detail-only content rises in once the panel has opened.
+              ViewTransition(enter="rise" exit="fade")
+                div(className="flex flex-col gap-2")
+                  p(className="m-0 hidden text-sm leading-relaxed text-muted sm:block") Sample profile — the figures on this page are illustrative, not benchmarks.
+                  // one row of chips on phones (scrolls if it must), wrapping on wider screens
+                  div(className="flex gap-1.5 overflow-x-auto sm:flex-wrap sm:overflow-visible")
+                    each mode in p.modes key mode
+                      span.chip #{mode}
+          elseif selected === null
+            if layout === "table"
+              article(role="row" tabIndex={0} aria-label={`${p.name} details`} className={`${TABLE_COLUMNS} vt-focus min-w-0 cursor-pointer rounded-xl bg-panel-2 hover:bg-panel`} onClick={() => select(p.id)} onKeyDown={(event) => openOnKey(event, p.id)})
+                Field(role="cell" name={`a-p-name-${p.id}`} text={p.name} className="text-sm font-medium")
+                Field(role="cell" name={`a-p-model-${p.id}`} text={p.model} className="hidden text-sm text-muted sm:block")
+                Field(role="cell" name={`a-p-value-${p.id}`} text={p.context} className="justify-self-end text-lg font-medium tracking-[-0.03em]")
+                Field(role="cell" name={`a-p-speed-${p.id}`} text={p.speed} className="hidden justify-self-end font-mono text-xs text-muted sm:block")
+                Field(role="cell" name={`a-p-price-${p.id}`} text={p.price} className="hidden justify-self-end font-mono text-xs text-muted sm:block")
+                Field(role="cell" name={`a-p-delta-${p.id}`} text={p.delta} className={`justify-self-end font-mono text-xs ${trendColor(p.delta)}`})
+            else
+              article(tabIndex={0} role="button" aria-label={`${p.name} details`} className={`vt-focus min-w-0 cursor-pointer rounded-xl bg-panel-2 p-3 hover:bg-panel sm:p-4 ${layout === "grid" ? "flex flex-col items-start gap-3" : "flex items-center gap-4"}`} onClick={() => select(p.id)} onKeyDown={(event) => openOnKey(event, p.id)})
+                // name and model share a line where they fit, and wrap where they don't
+                div(className="flex min-w-0 flex-wrap items-baseline gap-x-2")
+                  Field(name={`a-p-name-${p.id}`} text={p.name} className="text-sm font-medium")
+                  Field(name={`a-p-model-${p.id}`} text={p.model} className="text-xs text-muted")
+                Field(name={`a-p-value-${p.id}`} text={p.context} className={`font-medium tracking-[-0.04em] ${layout === "grid" ? "text-2xl sm:text-3xl" : "ml-auto text-xl"}`})
+                Field(name={`a-p-delta-${p.id}`} text={p.delta} className={`font-mono text-xs ${trendColor(p.delta)}`})

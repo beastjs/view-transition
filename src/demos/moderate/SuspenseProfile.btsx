@@ -2,9 +2,9 @@ import { ViewTransition, use, useState, useTransition } from "octane";
 module
   interface Profile { id: number; name: string; role: string; city: string; art: string; projects: number }
   const PROFILES: Profile[] = [
-    { id: 0, name: "Mira Okafor", role: "Design director", city: "Lisbon", art: "art-3", projects: 42 },
+    { id: 0, name: "Minori Kato", role: "Design director", city: "Lisbon", art: "art-3", projects: 42 },
     { id: 1, name: "Jun Takeda", role: "Creative engineer", city: "Osaka", art: "art-2", projects: 57 },
-    { id: 2, name: "Alba Ruiz", role: "Strategy lead", city: "Valencia", art: "art-1", projects: 31 }
+    { id: 2, name: "Moe Shida", role: "Strategy lead", city: "Valencia", art: "art-1", projects: 31 }
   ];
   const cache = new Map<string, Promise<Profile>>();
   // Every click gets a fresh request so the pending state is visible each time.
@@ -19,14 +19,34 @@ module
   }
 
 component ProfileCard
-  props { id, request }: { id: number; request: number }
+  props { id, request, pending }: { id: number; request: number; pending: boolean }
   setup const profile = use(fetchProfile(id, request));
+  // Loading cues live *inside* each captured element: a snapshot doesn't
+  // include its ancestors' opacity, so dimming a wrapper would snap back to
+  // full brightness the moment the swap begins.
+  setup const dim = `transition-opacity duration-300 ${pending ? "opacity-45" : "opacity-100"}`;
+  // Every piece has its own boundary, and the card is remounted per request,
+  // so each load is a real exit + enter: the old pieces leave, the new arrive.
   article(className="flex items-center gap-5 rounded-[1.5rem] bg-panel-2 p-5")
-    div(className={`art ${profile.art} size-20 shrink-0 rounded-full`})
+    // While the next profile loads, the current one drains of colour and its
+    // halo tightens — plain CSS transitions, which the swap then picks up from.
+    div(className="relative size-20 shrink-0")
+      ViewTransition(enter="iris" exit="iris")
+        div(className="size-20")
+          div(className={`art ${profile.art} size-20 rounded-full transition-[filter] duration-500 ${pending ? "grayscale-70" : "grayscale-0"}`})
+      ViewTransition(enter="ring" exit="fade")
+        span(className={`pointer-events-none absolute -inset-1.5 rounded-full border border-muted/80 border-dashed transition-transform duration-500 ease-out ${pending ? "scale-[0.88]" : "scale-100"}`})
     div(className="min-w-0")
-      h3(className="m-0 text-2xl font-medium tracking-[-0.03em]") #{profile.name}
-      p(className="m-0 pt-1 text-sm text-muted") #{profile.role} · #{profile.city}
-      p(className="m-0 pt-3 font-mono text-xs text-muted") #{profile.projects} projects shipped
+      // Each line rises out of its own mask, one after another.
+      ViewTransition(enter="slide-up d1" exit="slide-away")
+        h3(className="m-0 text-2xl font-medium tracking-[-0.03em]")
+          span(className={dim}) #{profile.name}
+      ViewTransition(enter="slide-up d2" exit="slide-away")
+        p(className="m-0 pt-1 text-sm text-muted")
+          span(className={dim}) #{profile.role} · #{profile.city}
+      ViewTransition(enter="slide-up d3" exit="slide-away")
+        p(className="m-0 pt-3 font-mono text-xs text-muted")
+          span(className={dim}) #{profile.projects} projects shipped
 
 component ProfileSkeleton
   article(aria-busy="true" className="flex items-center gap-5 rounded-[1.5rem] bg-panel-2 p-5")
@@ -50,10 +70,12 @@ div(className="flex w-full max-w-md flex-col gap-5")
       button.vt-btn(type="button" aria-pressed={selected === profile.id} onClick={() => open(profile.id)}) #{profile.name.split(" ")[0]}
   // The boundary sits *outside* the suspense arm: the old card is held until
   // the new one resolves, then the two are morphed in a single transition.
-  div(className={`transition-opacity duration-300 ${isPending ? "opacity-50" : "opacity-100"}`})
-    ViewTransition(name="m-profile" update="glide")
+  div
+    ViewTransition(name="m-profile" update="stretch round-24")
       try
-        ProfileCard(id={selected} request={request})
+        // Keyed by request: a fresh card each load, so its pieces enter anew.
+        each r in [request] key r
+          ProfileCard(id={selected} request={r} pending={isPending})
       pending
         ProfileSkeleton
-  p(role="status" className="m-0 font-mono text-xs text-muted") #{isPending ? "fetching… old UI stays interactive" : "idle"}
+  p(role="status" className="m-0 font-sans text-xs text-muted") #{isPending ? "fetching… old UI stays interactive" : "idle"}

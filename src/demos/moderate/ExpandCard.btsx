@@ -6,28 +6,37 @@ module
     { id: 2, title: "Ladya", kicker: "branding", art: "art-3", body: "Rebranding a furniture factory from heritage to modern without losing the grain of the wood." },
     { id: 3, title: "Astroverts", kicker: "ux · seo", art: "art-2", body: "A science travel club site that sells curiosity first and itineraries second." }
   ];
+  interface Selection { open: number | null; previous: number | null }
 
-setup const [selected, setSelected] = useState<number | null>(null);
-setup const select = (id: number | null) => startTransition(() => setSelected(id));
+setup const [selection, setSelection] = useState<Selection>({ open: null, previous: null });
+setup const select = (id: number | null) => startTransition(() => setSelection((s) => ({ open: id, previous: s.open })));
+setup
+  // Each frame's role in this transition: the card opening unfolds, the card
+  // closing folds, and every other card just stretches to its new slot.
+  const frameClass = (id: number) =>
+    id === selection.open ? "unfold round-24" : id === selection.previous ? "fold round-24" : "stretch round-24";
 
-div(className="grid w-full grid-cols-1 gap-3 sm:grid-cols-3")
+// Six columns: three cards of two, or — with one open — the open card across
+// the top and the other two at three each underneath.
+div(className="grid w-full grid-cols-1 gap-3 self-start sm:grid-cols-6")
   each card in CARDS key card.id
-    if selected === card.id
-      // Outer name morphs the frame; nested names move art + title on their own paths.
-      ViewTransition(name={`m-card-${card.id}`} share="morph" update="morph")
-        article(className="col-span-full grid cursor-pointer gap-5 rounded-[1.75rem] bg-panel-2 p-4 sm:grid-cols-[1.1fr_1fr]" onClick={() => select(null)})
-          ViewTransition(name={`m-card-art-${card.id}`} share="morph")
+    // One persistent boundary per card, so the frame *updates* while the art
+    // and title — shared names in both layouts — travel on their own paths.
+    ViewTransition(name={`m-card-${card.id}`} update={frameClass(card.id)})
+      if selection.open === card.id
+        article(className="order-first col-span-full grid cursor-pointer gap-5 rounded-[1.5rem] bg-panel-2 p-4 sm:grid-cols-[1.1fr_1fr]" onClick={() => select(null)})
+          ViewTransition(name={`m-card-art-${card.id}`} share="grow round-20")
             div(className={`art ${card.art} min-h-52 rounded-[1.25rem]`})
           div(className="flex flex-col gap-3 p-2")
-            ViewTransition(name={`m-card-title-${card.id}`} share="glide")
-              h3(className="m-0 text-3xl font-medium tracking-[-0.04em]") #{card.title}
+            ViewTransition(name={`m-card-title-${card.id}`} share="text-zoom")
+              h3(className="m-0 w-fit text-3xl font-medium tracking-[-0.04em]") #{card.title}
             span.eyebrow #{card.kicker}
             p(className="m-0 text-sm leading-relaxed text-muted") #{card.body}
             span(className="mt-auto text-xs text-muted") click to close
-    else
-      ViewTransition(name={`m-card-${card.id}`} share="morph" update="glide")
-        article(className="cursor-pointer rounded-[1.5rem] bg-panel-2 p-3 transition-colors hover:bg-panel" onClick={() => select(card.id)})
-          ViewTransition(name={`m-card-art-${card.id}`} share="morph")
-            div(className={`art ${card.art} h-28 rounded-[1.1rem]`})
-          ViewTransition(name={`m-card-title-${card.id}`} share="glide")
-            h3(className="m-0 px-1 pt-3 text-lg font-medium tracking-[-0.02em]") #{card.title}
+      else
+        article(className={`cursor-pointer rounded-[1.5rem] bg-panel-2 p-3 transition-colors hover:bg-panel ${selection.open === null ? "sm:col-span-2" : "sm:col-span-3"}`} onClick={() => select(card.id)})
+          ViewTransition(name={`m-card-art-${card.id}`} share="shrink round-20" update="grow round-20")
+            div(className={`art ${card.art} h-28 rounded-[1.25rem]`})
+          div(className="px-1 pt-3")
+            ViewTransition(name={`m-card-title-${card.id}`} share="text-zoom" update="text-zoom")
+              h3(className="m-0 w-fit text-lg font-medium tracking-[-0.02em]") #{card.title}

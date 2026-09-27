@@ -397,7 +397,6 @@
 @keyframes vt-fade-out {
   to {
     opacity: 0;
-    scale: 0.25;
   }
 }
 
@@ -405,6 +404,588 @@
 ::view-transition-group(*.glide) {
   animation-duration: 380ms;
   animation-timing-function: var(--vt-glide);
+}
+
+/* 4b · grow / shrink, unfold / fold — size morphs that stay one element.
+ * The default morph cross-fades two snapshots that are each scaled to the
+ * group's width, so a small thumbnail visibly balloons before it fades out.
+ * These clip the pair to the moving box and draw only the *larger* snapshot:
+ *   grow / shrink  — cropped to fill (object-fit: cover), for images and art
+ *   unfold / fold  — revealed from the top-left at natural size, for panels
+ * Use the grow/unfold class when expanding and shrink/fold when collapsing. */
+::view-transition-group(*.grow),
+::view-transition-group(*.shrink),
+::view-transition-group(*.unfold),
+::view-transition-group(*.fold) {
+  animation-duration: 520ms;
+  animation-timing-function: var(--vt-glide);
+}
+/* a growing or shrinking image travels above backdrops and panels */
+::view-transition-group(*.grow),
+::view-transition-group(*.shrink) {
+  z-index: 2;
+}
+::view-transition-image-pair(*.grow),
+::view-transition-image-pair(*.shrink),
+::view-transition-image-pair(*.unfold),
+::view-transition-image-pair(*.fold) {
+  overflow: clip;
+}
+::view-transition-old(*.grow),
+::view-transition-new(*.grow),
+::view-transition-old(*.shrink),
+::view-transition-new(*.shrink) {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+::view-transition-old(*.unfold),
+::view-transition-new(*.unfold),
+::view-transition-old(*.fold),
+::view-transition-new(*.fold) {
+  width: 100%;
+  height: 100%;
+  object-fit: none;
+  object-position: left top;
+}
+/* expanding: the new, larger snapshot carries the whole morph */
+::view-transition-old(*.grow),
+::view-transition-old(*.unfold) {
+  animation: none;
+  opacity: 0;
+}
+::view-transition-new(*.grow),
+::view-transition-new(*.unfold) {
+  animation: none;
+}
+/* collapsing: the old, larger snapshot carries it; the small one lands last */
+::view-transition-old(*.shrink),
+::view-transition-old(*.fold) {
+  animation: none;
+}
+::view-transition-new(*.shrink),
+::view-transition-new(*.fold) {
+  animation: 160ms ease 360ms both vt-fade-in;
+}
+
+/* ToggleCard: the clip also carries the corner radius between the two shapes
+ * (circle art 28px → 1.25rem, pill frame 36px → 1.75rem). */
+:root:active-view-transition-type(expand)::view-transition-image-pair(b-card-art) {
+  animation: 520ms var(--vt-glide) both vt-radius-art;
+}
+:root:active-view-transition-type(collapse)::view-transition-image-pair(b-card-art) {
+  animation: 520ms var(--vt-glide) reverse both vt-radius-art;
+}
+:root:active-view-transition-type(expand)::view-transition-image-pair(b-card) {
+  animation: 520ms var(--vt-glide) both vt-radius-card;
+}
+:root:active-view-transition-type(collapse)::view-transition-image-pair(b-card) {
+  animation: 520ms var(--vt-glide) reverse both vt-radius-card;
+}
+
+@keyframes vt-radius-art {
+  from {
+    border-radius: 28px;
+  }
+  to {
+    border-radius: 1.25rem;
+  }
+}
+@keyframes vt-radius-card {
+  from {
+    border-radius: 36px;
+  }
+  to {
+    border-radius: 1.75rem;
+  }
+}
+
+/* 4c · nudge — a short directional slide for content that swaps in place.
+ * Snapshots keep their natural width (inline-size: auto) so text of a
+ * different length is never stretched while the group resizes. */
+::view-transition-old(*.nudge-forward),
+::view-transition-new(*.nudge-forward),
+::view-transition-old(*.nudge-backward),
+::view-transition-new(*.nudge-backward) {
+  inline-size: auto;
+}
+::view-transition-old(*.nudge-forward) {
+  animation: 200ms ease-in both vt-nudge-out-left;
+}
+::view-transition-new(*.nudge-forward) {
+  animation: 340ms var(--vt-ease) 140ms both vt-nudge-in-right;
+}
+::view-transition-old(*.nudge-backward) {
+  animation: 200ms ease-in both vt-nudge-out-right;
+}
+::view-transition-new(*.nudge-backward) {
+  animation: 340ms var(--vt-ease) 140ms both vt-nudge-in-left;
+}
+
+@keyframes vt-nudge-out-left {
+  to {
+    transform: translateX(-16px);
+    opacity: 0;
+  }
+}
+@keyframes vt-nudge-in-right {
+  from {
+    transform: translateX(16px);
+    opacity: 0;
+  }
+}
+@keyframes vt-nudge-out-right {
+  to {
+    transform: translateX(16px);
+    opacity: 0;
+  }
+}
+@keyframes vt-nudge-in-left {
+  from {
+    transform: translateX(-16px);
+    opacity: 0;
+  }
+}
+
+/* 4c2 · stretch, text-zoom, round-* — composable helpers.
+ * Classes combine: update="stretch round-24" applies both.
+ *   stretch    for a plain panel whose content is animated separately: a
+ *              single snapshot stretched to the moving box, no cross-fade.
+ *   text-zoom  for text that changes size or place but not wording: the new
+ *              snapshot is scaled from the old box, so it reads as one line of
+ *              text zooming. Make the element w-fit so its box hugs the text.
+ *   round-12/20/24  clip the moving pair to a 12 / 20 / 24px corner, so cropped or
+ *              stretched snapshots keep the element's rounding. */
+::view-transition-group(*.stretch),
+::view-transition-group(*.text-zoom) {
+  animation-duration: 520ms;
+  animation-timing-function: var(--vt-glide);
+}
+/* zooming text stays readable: it travels above images and panels */
+::view-transition-group(*.text-zoom) {
+  z-index: 3;
+}
+::view-transition-old(*.stretch),
+::view-transition-old(*.text-zoom) {
+  animation: none;
+  opacity: 0;
+}
+::view-transition-new(*.stretch),
+::view-transition-new(*.text-zoom) {
+  animation: none;
+}
+::view-transition-new(*.stretch) {
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+}
+::view-transition-image-pair(*.round-12) {
+  overflow: clip;
+  border-radius: 0.75rem;
+}
+::view-transition-image-pair(*.round-20) {
+  overflow: clip;
+  border-radius: 1.25rem;
+}
+::view-transition-image-pair(*.round-24) {
+  overflow: clip;
+  border-radius: 1.5rem;
+}
+
+/* 4c3 · slide-up / slide-away — line-by-line text reveal.
+ * Each line's group clips its own box, so text rises out of an invisible
+ * mask rather than floating over its neighbours. Stagger with d1–d3:
+ * enter="slide-up d2". The old line leaves upward, all at once. */
+::view-transition-group(*.slide-up),
+::view-transition-group(*.slide-away) {
+  overflow: clip;
+}
+::view-transition-new(*.slide-up) {
+  animation: 520ms var(--vt-ease) both vt-slide-up-in;
+}
+::view-transition-new(*.slide-up.d1) {
+  animation-delay: 180ms;
+}
+::view-transition-new(*.slide-up.d2) {
+  animation-delay: 260ms;
+}
+::view-transition-new(*.slide-up.d3) {
+  animation-delay: 340ms;
+}
+::view-transition-old(*.slide-away) {
+  animation: 240ms ease-in both vt-slide-away;
+}
+
+@keyframes vt-slide-up-in {
+  from {
+    transform: translateY(105%);
+  }
+}
+@keyframes vt-slide-away {
+  to {
+    transform: translateY(-105%);
+    opacity: 0;
+  }
+}
+
+/* 4c4 · iris / ring — a portrait swap.
+ * The new avatar opens from a pinpoint while its art spins into place on a
+ * spring; the old one twists away, shrinking into a blur. A ring element
+ * then pulses out and settles as a halo. */
+/* two animations on purpose: the aperture opens on a smooth ease while the
+ * art spins on a spring, so the pinpoint is visible before the overshoot */
+::view-transition-new(*.iris) {
+  animation:
+    640ms var(--vt-ease) 120ms both vt-iris-open,
+    900ms var(--vt-spring) 120ms both vt-iris-spin;
+}
+::view-transition-old(*.iris) {
+  animation: 380ms ease-in both vt-iris-out;
+}
+::view-transition-new(*.ring) {
+  animation: 700ms var(--vt-ease) 260ms both vt-ring-in;
+}
+
+@keyframes vt-iris-open {
+  from {
+    clip-path: circle(0% at 50% 50%);
+  }
+  to {
+    clip-path: circle(71% at 50% 50%);
+  }
+}
+@keyframes vt-iris-spin {
+  from {
+    transform: rotate(-140deg) scale(1.25);
+  }
+}
+@keyframes vt-iris-out {
+  to {
+    transform: rotate(90deg) scale(0.55);
+    opacity: 0;
+    filter: blur(6px);
+  }
+}
+@keyframes vt-ring-in {
+  from {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  45% {
+    transform: scale(1.3);
+    opacity: 1;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+/* 4c5 · fly / bump / late — add-to-bag.
+ *   fly   a picture that leaves one place and lands small and round in
+ *         another. The flight path (an arc) is written by the demo's onShare
+ *         callback; CSS owns the clip, the rounding and the landing.
+ *   bump  a springy pulse on the receiving container, timed to the landing.
+ *   late  pushes another class's old/new animations back to the landing too,
+ *         e.g. update="roll-up late" on the counter. */
+::view-transition-group(*.fly) {
+  z-index: 5;
+  animation-duration: 700ms;
+}
+::view-transition-image-pair(*.fly) {
+  overflow: clip;
+  animation: 700ms linear both vt-fly-round;
+}
+::view-transition-old(*.fly),
+::view-transition-new(*.fly) {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+::view-transition-old(*.fly) {
+  animation: none;
+}
+::view-transition-new(*.fly) {
+  animation: 160ms ease 540ms both vt-fade-in;
+}
+
+::view-transition-old(*.bump) {
+  animation: none;
+  opacity: 0;
+}
+::view-transition-new(*.bump) {
+  animation: none;
+}
+::view-transition-image-pair(*.bump) {
+  animation: 440ms var(--vt-spring) 580ms both vt-bump;
+}
+
+::view-transition-old(*.roll-up.late),
+::view-transition-new(*.roll-up.late) {
+  animation-delay: 560ms;
+}
+
+@keyframes vt-fly-round {
+  from {
+    border-radius: 1.25rem;
+  }
+  55%,
+  to {
+    border-radius: 50%;
+  }
+}
+@keyframes vt-bump {
+  40% {
+    transform: scale(1.14);
+  }
+}
+
+/* 4c6 · deck-up / deck-in — a card stack.
+ * Snapshots don't use the elements' z-index: pairs stack in old paint order
+ * (so render the stack back-to-front), and new-only snapshots are appended on
+ * top. Explicit layers fix it: flung card above, cards moving forward in the
+ * middle, the new back card at the bottom, growing out from behind. */
+::view-transition-group(*.fling-left),
+::view-transition-group(*.fling-right) {
+  z-index: 3;
+}
+::view-transition-group(*.deck-up) {
+  z-index: 1;
+  animation-duration: 440ms;
+  animation-timing-function: var(--vt-glide);
+}
+::view-transition-old(*.deck-up) {
+  animation: none;
+  opacity: 0;
+}
+::view-transition-new(*.deck-up) {
+  animation: none;
+}
+::view-transition-group(*.deck-in) {
+  z-index: 0;
+}
+::view-transition-new(*.deck-in) {
+  animation: 440ms var(--vt-ease) 120ms both vt-deck-in;
+}
+
+@keyframes vt-deck-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.9);
+  }
+}
+
+/* 4c7 · step-to-* / portal-* — handing an answer from a form to a list.
+ *   step-to-left/right   a quick 280ms slide-out for form pieces.
+ *   portal-to-* / portal-from-*   the element slides through its own edge:
+ *     its group clips to its box, so it vanishes into — or emerges from — an
+ *     invisible slit, as if passing through a portal. */
+::view-transition-old(*.step-to-left) {
+  animation: 280ms var(--vt-ease) both vt-out-left;
+}
+::view-transition-old(*.step-to-right) {
+  animation: 280ms var(--vt-ease) both vt-out-right;
+}
+
+::view-transition-group(*.portal-to-left),
+::view-transition-group(*.portal-to-right),
+::view-transition-group(*.portal-from-left),
+::view-transition-group(*.portal-from-right) {
+  overflow: clip;
+}
+::view-transition-old(*.portal-to-left) {
+  animation: 280ms cubic-bezier(0.5, 0, 0.9, 0.4) both vt-portal-to-left;
+}
+::view-transition-old(*.portal-to-right) {
+  animation: 280ms cubic-bezier(0.5, 0, 0.9, 0.4) both vt-portal-to-right;
+}
+::view-transition-new(*.portal-from-left) {
+  animation: 440ms var(--vt-ease) both vt-portal-from-left;
+}
+::view-transition-new(*.portal-from-right) {
+  animation: 440ms var(--vt-ease) both vt-portal-from-right;
+}
+
+@keyframes vt-portal-to-left {
+  to {
+    transform: translateX(-105%);
+  }
+}
+@keyframes vt-portal-to-right {
+  to {
+    transform: translateX(105%);
+  }
+}
+@keyframes vt-portal-from-left {
+  from {
+    transform: translateX(-105%);
+  }
+}
+@keyframes vt-portal-from-right {
+  from {
+    transform: translateX(105%);
+  }
+}
+
+/* push-*: one element pushes another out of the same slot, on one shared
+ * curve and clock, each clipped to its own box. The outgoing side travels a
+ * full width and dims; the incoming side starts 30% in and fades up. */
+::view-transition-group(*.push-to-left),
+::view-transition-group(*.push-to-right),
+::view-transition-group(*.push-from-left),
+::view-transition-group(*.push-from-right) {
+  overflow: clip;
+}
+/* One timing for both sides — that is what keeps the edges touching. A long,
+ * gentle ease-in-out: an unhurried start, a low peak, a long settle. */
+:root {
+  --vt-push: 820ms cubic-bezier(0.45, 0, 0.2, 1);
+}
+::view-transition-old(*.push-to-left) {
+  animation: var(--vt-push) both vt-push-to-left;
+}
+::view-transition-old(*.push-to-right) {
+  animation: var(--vt-push) both vt-push-to-right;
+}
+::view-transition-new(*.push-from-right) {
+  animation: var(--vt-push) both vt-push-from-right;
+}
+::view-transition-new(*.push-from-left) {
+  animation: var(--vt-push) both vt-push-from-left;
+}
+
+/* the pushed-out side dims a little as it goes; the incoming side stays solid */
+@keyframes vt-push-to-left {
+  to {
+    transform: translateX(-100%);
+    opacity: 0.35;
+  }
+}
+@keyframes vt-push-to-right {
+  to {
+    transform: translateX(100%);
+    opacity: 0.35;
+  }
+}
+/* the incoming side starts closer in (30%) and fades up — held invisible for
+ * the first 40% of the push, so it never shows through the outgoing side */
+@keyframes vt-push-from-right {
+  from {
+    transform: translateX(30%);
+    opacity: 0;
+  }
+  40% {
+    opacity: 0;
+  }
+}
+@keyframes vt-push-from-left {
+  from {
+    transform: translateX(-30%);
+    opacity: 0;
+  }
+  40% {
+    opacity: 0;
+  }
+}
+
+/* portal-far-*: through the *parent's* edge instead of the element's own.
+ * A snapshot can only clip to its own box, so the page measures how far the
+ * element sits from its container's left edge and hands it over on <html>
+ * (--portal-out-dx leaving, --portal-in-dx arriving). The group's clip
+ * reaches back to that edge, and the slide covers the whole distance. */
+::view-transition-group(*.portal-far-to-left) {
+  clip-path: inset(-40px -40px -40px calc(-1 * var(--portal-out-dx, 0px)));
+}
+::view-transition-group(*.portal-far-from-left) {
+  clip-path: inset(-40px -40px -40px calc(-1 * var(--portal-in-dx, 0px)));
+}
+::view-transition-old(*.portal-far-to-left) {
+  animation: 520ms cubic-bezier(0.5, 0, 0.8, 0.4) both vt-portal-far-to-left;
+}
+::view-transition-new(*.portal-far-from-left) {
+  animation: 520ms var(--vt-ease) both vt-portal-far-from-left;
+}
+
+@keyframes vt-portal-far-to-left {
+  to {
+    transform: translateX(calc(-1 * var(--portal-out-dx, 0px) - 105%));
+  }
+}
+@keyframes vt-portal-far-from-left {
+  from {
+    transform: translateX(calc(-1 * var(--portal-in-dx, 0px) - 105%));
+  }
+}
+
+/* 4d · lift / dip — reorder with depth. Text moving up swells slightly and
+ * passes over text moving down, which dips.
+ *  - The scale lives on the image-pair: the group's transform is already the
+ *    browser's move, and a second animation there would replace it.
+ *  - Move and scale share one symmetric curve over the same duration, so the
+ *    swell peaks mid-travel instead of pulsing after arrival.
+ *  - The content is identical before and after, so there is no cross-fade:
+ *    only the new snapshot is drawn, one crisp piece of text in motion. */
+::view-transition-group(*.lift),
+::view-transition-group(*.dip) {
+  animation-duration: 520ms;
+  animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
+}
+::view-transition-group(*.lift) {
+  z-index: 2;
+}
+::view-transition-group(*.dip) {
+  z-index: 0;
+}
+::view-transition-old(*.lift),
+::view-transition-old(*.dip) {
+  animation: none;
+  opacity: 0;
+}
+::view-transition-new(*.lift),
+::view-transition-new(*.dip) {
+  animation: none;
+}
+::view-transition-image-pair(*.lift) {
+  animation: 520ms linear both vt-lift;
+}
+::view-transition-image-pair(*.dip) {
+  animation: 520ms linear both vt-dip;
+}
+
+@keyframes vt-lift {
+  0% {
+    transform: scale(1);
+    animation-timing-function: ease-in-out;
+  }
+  50% {
+    transform: scale(1.05);
+    animation-timing-function: ease-in-out;
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@keyframes vt-dip {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+    animation-timing-function: ease-in-out;
+  }
+  40% {
+    opacity: 0.4;
+  }
+  50% {
+    transform: scale(0.94);
+    animation-timing-function: ease-in-out;
+  }
+  60% {
+    opacity: 0.4;
+    animation-timing-function: ease-in-out;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 /* 5 · directional page slides, chosen by addTransitionType() */
@@ -534,8 +1115,132 @@
   }
 }
 
+/* 8 · w1–w7 — wait. Composable delays for choreographing several
+ * boundaries in one transition: enter="slide-from-right w3". They delay every
+ * part (group, pair, old, new), so a shared glide can wait its turn too.
+ * Kept after every animation shorthand above, which would reset the delay. */
+::view-transition-group(*.w1),
+::view-transition-image-pair(*.w1),
+::view-transition-old(*.w1),
+::view-transition-new(*.w1) {
+  animation-delay: 200ms;
+}
+::view-transition-group(*.w2),
+::view-transition-image-pair(*.w2),
+::view-transition-old(*.w2),
+::view-transition-new(*.w2) {
+  animation-delay: 680ms;
+}
+::view-transition-group(*.w3),
+::view-transition-image-pair(*.w3),
+::view-transition-old(*.w3),
+::view-transition-new(*.w3) {
+  animation-delay: 760ms;
+}
+::view-transition-group(*.w4),
+::view-transition-image-pair(*.w4),
+::view-transition-old(*.w4),
+::view-transition-new(*.w4) {
+  animation-delay: 1100ms;
+}
+::view-transition-group(*.w5),
+::view-transition-image-pair(*.w5),
+::view-transition-old(*.w5),
+::view-transition-new(*.w5) {
+  animation-delay: 1540ms;
+}
+::view-transition-group(*.w6),
+::view-transition-image-pair(*.w6),
+::view-transition-old(*.w6),
+::view-transition-new(*.w6) {
+  animation-delay: 2080ms;
+}
+::view-transition-group(*.w7),
+::view-transition-image-pair(*.w7),
+::view-transition-old(*.w7),
+::view-transition-new(*.w7) {
+  animation-delay: 1640ms;
+}
+
+/* linger — stretch another class's timing a little (e.g. "roll-up linger").
+ * After every shorthand above so it wins; waits (w*) still apply. */
+::view-transition-group(*.linger),
+::view-transition-old(*.linger),
+::view-transition-new(*.linger) {
+  animation-duration: 520ms;
+}
+
+/* 9 · site chrome stays on top.
+ * Transition snapshots are painted in a layer above the live page, so a demo
+ * scrolled up under the fixed header / sticky tier bar would paint over them
+ * (and the live header can drop out entirely). Naming the chrome makes it part
+ * of every transition, stacked above all demo groups; its own named parts
+ * (the theme label, the tier underline) go above that. It looks the same
+ * before and after, so only the live new state is shown — no cross-fade.
+ * Skipped for the theme reveal, where the root snapshot must carry the header
+ * through the circle. */
+:root:not(:active-view-transition-type(theme)) .vt-chrome-header {
+  view-transition-name: app-header;
+}
+:root:not(:active-view-transition-type(theme)) .vt-chrome-nav {
+  view-transition-name: tier-nav;
+}
+
+/* The tier bar is frosted glass. A snapshot carries its translucent paint
+ * but not its backdrop-filter, so the group re-applies the blur to whatever
+ * is moving underneath it. */
+::view-transition-group(tier-nav) {
+  z-index: 100;
+  backdrop-filter: blur(24px);
+}
+::view-transition-group(app-header) {
+  z-index: 101;
+}
+::view-transition-group(tier-underline) {
+  z-index: 102;
+}
+::view-transition-group(theme-toggle-label) {
+  z-index: 103;
+}
+
+::view-transition-old(app-header),
+::view-transition-old(tier-nav) {
+  animation: none;
+  opacity: 0;
+}
+::view-transition-new(app-header),
+::view-transition-new(tier-nav) {
+  animation: none;
+}
+
+/* demo-in-* — the page swapping demos. Plain CSS on the incoming frame, not a
+ * view transition: a document transition would also snapshot every boundary
+ * inside the demos and set them animating on their own. */
+.demo-in-forward {
+  animation: 560ms var(--vt-ease) backwards demo-in-forward;
+}
+.demo-in-backward {
+  animation: 560ms var(--vt-ease) backwards demo-in-backward;
+}
+
+@keyframes demo-in-forward {
+  from {
+    opacity: 0;
+    transform: translateX(3%);
+    filter: blur(6px);
+  }
+}
+@keyframes demo-in-backward {
+  from {
+    opacity: 0;
+    transform: translateX(-3%);
+    filter: blur(6px);
+  }
+}
+
 /* Slow-mo toggle in the header — the DevTools trick, as a switch. */
 :root.slowmo::view-transition-group(*),
+:root.slowmo::view-transition-image-pair(*),
 :root.slowmo::view-transition-old(*),
 :root.slowmo::view-transition-new(*) {
   animation-duration: 1.8s !important;
@@ -552,7 +1257,9 @@
     transition-duration: 0.01ms !important;
   }
 
-  .rotator > span {
+  .rotator > span,
+  .demo-in-forward,
+  .demo-in-backward {
     animation: none;
   }
 
@@ -561,9 +1268,20 @@
   }
 
   ::view-transition-group(*),
+  ::view-transition-image-pair(*),
   ::view-transition-old(*),
   ::view-transition-new(*) {
     animation-duration: 0.01ms !important;
     animation-delay: 0ms !important;
   }
+}
+
+body {
+  -ms-overflow-style: none; /* Edge, Internet Explorer */
+  scrollbar-width: none; /* Firefox */
+  overflow-y: scroll;
+}
+
+::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
 }

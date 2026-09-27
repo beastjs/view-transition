@@ -1,0 +1,19 @@
+import {ViewTransition} from 'octane'
+module
+  type TabProps {
+    item: {id: string, index: number, label: string, value: number}
+    onClick: VoidFunction
+  }
+props {item}: TabProps
+button(
+  ~ type="button"
+  ~ aria-current={item === item.id ? "page" : undefined}
+  ~ className={`vt-focus relative flex cursor-pointer items-baseline gap-2 border-0 bg-transparent px-0 pb-5 transition-colors ${tier === item.id ? "text-ink" : "text-muted hover:text-ink"}`}
+  ~ onClick={() => selectTier(item.id)}
+  ~ )
+  span(className="font-mono text-xs") #{item.index}
+  span(className="text-[clamp(1.3rem,3vw,2.4rem)] tracking-[-0.04em]") #{item.label}
+  span(className="hidden font-mono text-xs sm:inline") (#{item.value})
+  if tier === item.id
+    ViewTransition(name="tier-underline" share="glide")
+      span(className="absolute inset-x-0 -bottom-px block h-0.5 bg-accent")

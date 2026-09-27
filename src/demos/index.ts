@@ -67,15 +67,15 @@ export const TIERS: Tier[] = [
       demo('./basic/ToggleCard.btsx', ToggleCard, {
         id: 'toggle-card',
         title: 'Compact ↔ detail',
-        blurb: 'Two different layouts share names, so the pill becomes the card instead of being replaced by it.',
-        apis: ['name', 'share', 'nested boundaries'],
+        blurb: 'Two layouts share names, so the pill becomes the card. Only the larger snapshot is drawn, clipped to the moving box, so nothing balloons.',
+        apis: ['share', 'addTransitionType', 'grow / unfold', 'nested boundaries'],
         origin: 'VT_beast §1 · simple view transition'
       }),
       demo('./basic/Tabs.btsx', Tabs, {
         id: 'tabs',
         title: 'Shared underline',
-        blurb: 'The underline unmounts under one tab and mounts under another in the same transition — that is a share.',
-        apis: ['share', 'update="fade"'],
+        blurb: 'The underline unmounts under one tab and mounts under another — that is a share. The panel nudges the way you travel, picked by transition type.',
+        apis: ['share', 'addTransitionType', 'update map'],
         origin: 'VT_MOD §2 · tabs'
       }),
       demo('./basic/Toasts.btsx', Toasts, {
@@ -88,8 +88,8 @@ export const TIERS: Tier[] = [
       demo('./basic/SortList.btsx', SortList, {
         id: 'sort-list',
         title: 'Reorder a list',
-        blurb: 'A stable name per row is all it takes for every item to travel to its new slot.',
-        apis: ['name per item', 'update'],
+        blurb: 'The rows stay put; only their text travels to the new slot. A per-row class adds depth: text moving up lifts over text sinking down.',
+        apis: ['name per item', 'update per row', 'image-pair'],
         origin: 'VT_beast §3 · list reordering'
       })
     ]
@@ -104,15 +104,15 @@ export const TIERS: Tier[] = [
       demo('./moderate/ExpandCard.btsx', ExpandCard, {
         id: 'expand-card',
         title: 'Magic-move card',
-        blurb: 'An outer boundary morphs the frame while nested boundaries fly the art and the title on their own paths.',
-        apis: ['share', 'nested names', 'update'],
+        blurb: 'One persistent boundary per card updates the frame — unfold, fold or stretch, by its role — while shared art and titles fly on their own paths.',
+        apis: ['update per role', 'nested share', 'text-zoom', 'round-*'],
         origin: 'VT_MOD §3 · expandable card'
       }),
       demo('./moderate/Lightbox.btsx', Lightbox, {
         id: 'lightbox',
         title: 'Gallery → lightbox',
-        blurb: 'The thumbnail becomes the full view. A placeholder holds its grid slot so nothing else jumps.',
-        apis: ['share', 'enter="rise"', 'object-fit'],
+        blurb: 'The thumbnail grows into the full view as one cropped image while the backdrop fades on its own layer. A placeholder holds the slot so nothing jumps.',
+        apis: ['share grow / shrink', 'enter / exit fade', 'round-12'],
         origin: 'VT_MOD §4 · image gallery'
       }),
       demo('./moderate/FilterList.btsx', FilterList, {
@@ -132,8 +132,8 @@ export const TIERS: Tier[] = [
       demo('./moderate/SuspenseProfile.btsx', SuspenseProfile, {
         id: 'suspense',
         title: 'Suspense-aware swap',
-        blurb: 'The transition holds the old profile while the new one loads, then morphs once — no skeleton flash in between.',
-        apis: ['useTransition', 'use()', 'try / pending'],
+        blurb: 'The transition holds the old profile while the new one loads. Then the old lines slide away, the portrait irises open with a ring pulse, and the new lines rise one by one.',
+        apis: ['useTransition', 'try / pending', 'keyed enter / exit', 'stagger classes'],
         origin: 'VT_MOD §8 · async suspense'
       })
     ]
@@ -155,8 +155,8 @@ export const TIERS: Tier[] = [
       demo('./advanced/ProductMorph.btsx', ProductMorph, {
         id: 'product-morph',
         title: 'List → detail, four ways',
-        blurb: 'Image, tag, name and price each carry their own shared name, so every fact travels separately into the detail layout.',
-        apis: ['share × 4', 'enter / exit', 'types'],
+        blurb: 'Image, tag, name and price each carry their own shared name: the picture grows, the text zooms, the others sink away. Bonus: Add to bag lifts the picture up to the bag’s row, shrinking, then slides it in; the bag bumps as it lands.',
+        apis: ['share × 4', 'text-zoom', 'onShare path', 'flushSync', 'bump / late'],
         origin: 'VT_ADV §1 · multi-shared element'
       }),
       demo('./advanced/TaskBoard.btsx', TaskBoard, {
@@ -169,22 +169,22 @@ export const TIERS: Tier[] = [
       demo('./advanced/SwipeDeck.btsx', SwipeDeck, {
         id: 'swipe-deck',
         title: 'Swipe deck',
-        blurb: 'Drag past the threshold and the snapshot starts from wherever your finger left it, then flings out in that direction.',
-        apis: ['pointer events', 'exit map', 'update'],
+        blurb: 'Drag past the threshold and the card flings out from wherever your finger left it. The deck steps forward and a new card grows in from behind — layered explicitly, since snapshots ignore z-index.',
+        apis: ['pointer events', 'exit map', 'deck-up / deck-in', 'layering'],
         origin: 'VT_ADV §4 · gesture-driven'
       }),
       demo('./advanced/Wizard.btsx', Wizard, {
         id: 'wizard',
         title: 'Onboarding wizard',
-        blurb: 'Steps slide by direction while one shared marker travels across the stepper tracks.',
-        apis: ['share', 'enter / exit maps', 'addTransitionType'],
+        blurb: 'The step leaves piece by piece — choices, then question — and your answer slips through a portal: out its own left edge, into the list from the right. Back plays it mirrored.',
+        apis: ['enter / exit maps', 'w1–w5 waits', 'portal-to / portal-from', 'addTransitionType'],
         origin: 'VT_MOD §10 · VT_ADV §5'
       }),
       demo('./advanced/Dashboard.btsx', Dashboard, {
         id: 'dashboard',
-        title: 'Orchestrated layout',
-        blurb: 'Three transitions in sequence — make room, reflow, restore — each awaited before the next begins.',
-        apis: ['sequenced transitions', 'activeViewTransition', 'update'],
+        title: 'AI providers dashboard',
+        blurb: 'Grid, list or table: the same provider panels and text travel to new places, and the table adds columns. Click one for details — its panel unfolds and its facts glide into place. Compact is plain CSS.',
+        apis: ['grid / list / table', 'details via share', 'text-zoom', 'CSS width transition'],
         origin: 'VT_ADV §6 · nested orchestration'
       })
     ]

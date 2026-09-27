@@ -198,6 +198,15 @@ shared-element effect.
 - The entering side's `share` class is what gets applied, so set the same value
   on both sides.
 - Both boundaries must be in the viewport.
+- **Don't wrap a whole view in an enter/exit boundary** if shared names live
+  inside it. Pairing across two such wrappers is unreliable (in
+  `ProductMorph.btsx` it worked on open and failed on close). Give the
+  non-shared pieces their own `enter`/`exit` instead.
+- **Don't nest shares inside a share.** If the outer boundary is itself a
+  shared pair (one unmounts and another mounts under the same name), Octane
+  doesn't activate the shared names inside it, so they just appear. Keep the
+  outer boundary persistent, wrapping both layouts so it gets an `update`, and
+  let the inner names share (`ToggleCard.btsx`, `ExpandCard.btsx`).
 
 ```btsx
 if tab === t
@@ -337,7 +346,8 @@ The notes in `VT_*.md` mention a few APIs that don't exist here:
 
 ```text
 src/
-  App.btsx                 shell: header, hero, tier switcher, principles, footer
+  App.btsx                 shell: header, hero, and a one-screen demo section
+                           (tier bar → demo tabs → the open demo filling the rest)
   components/DemoFrame.btsx  preview/source frame around each example
   demos/{basic,moderate,advanced}/*.btsx   one self-contained example per file
   demos/index.ts           tier and example metadata
@@ -357,6 +367,15 @@ the `virtual:demo-sources` module in `vite.config.ts`.
   `src/style.css`, not in a scoped `style` block.
 - **Only on-screen boundaries animate.** Like React, Octane skips boundaries
   that are outside the viewport.
+- **Don't wrap boundary-heavy content in a page transition.** If a view
+  transition swaps a whole page region (the demo switch here), the boundaries
+  inside it can start animating on their own instead of travelling with it.
+  Page chrome like tabs, sidebars and region swaps is usually better as plain
+  CSS; keep view transitions for the content itself.
+- **Snapshots ignore `z-index`.** Elements present before and after stack in
+  their old paint order, and elements that only exist afterwards are added on
+  top. For stacked UI (a card deck, overlapping panels), render in paint order
+  and set `z-index` on the groups through classes (`SwipeDeck.btsx`).
 - **The root isn't captured by default.** During a transition Octane sets
   `view-transition-name: none` on `<html>`, so content outside any boundary
   stays live instead of cross-fading. For a whole-page effect, set the root's

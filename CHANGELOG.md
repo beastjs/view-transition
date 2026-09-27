@@ -14,6 +14,11 @@ All notable changes to `view-transition` will be recorded here.
 
 ### Changed
 
+- Demo section clears the fixed header on desktop (where the tier bar is hidden), so the tabs start right under it and the demo fills the rest of the screen. A one-line footer is back.
+- Switching demos or tiers is now a CSS slide on the incoming frame, and the tab underlines are CSS indicators. As a view transition it also snapshotted every boundary inside the demos, which then animated on their own.
+
+- Layout: the tier section is now exactly one screen — tier bar, a tab per demo in that tier, and the open demo filling the rest of the height. Switching demo or tier slides by direction and each tier remembers its open demo. The principles section and footer are removed for now.
+
 - README: full `ViewTransition` prop reference — class-value resolution, triggers, callbacks and instance API, `ref`, `scope`, recipes.
 
 - Beast devtools and Octane profiling load only with `BEAST_DEVTOOLS=1` (`bun run dev:devtools`). Loading them makes Octane skip most view transitions.
