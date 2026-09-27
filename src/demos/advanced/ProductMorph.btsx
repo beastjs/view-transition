@@ -1,0 +1,80 @@
+import { ViewTransition, addTransitionType, startTransition, useState } from "octane";
+module
+  interface Product { id: number; name: string; price: number; tag: string; art: string; blurb: string }
+  const PRODUCTS: Product[] = [
+    { id: 1, name: "Orbit lamp", price: 240, tag: "lighting", art: "art-1", blurb: "Hand-spun aluminium with a dimmable warm core. Throws a halo, not a glare." },
+    { id: 2, name: "Tide chair", price: 590, tag: "seating", art: "art-2", blurb: "Steam-bent ash and waxed canvas. Sits low, reads well from across the room." },
+    { id: 3, name: "Bloom vase", price: 85, tag: "objects", art: "art-3", blurb: "Glazed stoneware with a conic finish no two kilns agree on." },
+    { id: 4, name: "Dusk rug", price: 420, tag: "textiles", art: "art-4", blurb: "Undyed wool, hand-knotted. Gets better with every muddy boot." }
+  ];
+
+module
+  interface ProductItemProps {
+    product: Product
+    open: (id: number | null) => void
+  }
+
+component ProductItem
+  props { product, open }: ProductItemProps
+  ViewTransition(enter="fade" exit="fade")
+    article(className="grid gap-6 sm:grid-cols-[1fr_1fr]")
+      ViewTransition(name={`a-prod-art-${product.id}`} share="morph")
+        div(className={`art ${product.art} aspect-[4/5] rounded-[1.5rem]`})
+      div(className="flex flex-col gap-4 py-2")
+        button(type="button" className="vt-btn self-start" onClick={() => open(null)}) ← all objects
+        ViewTransition(name={`a-prod-tag-${product.id}`} share="glide")
+          span(className="chip self-start") #{product.tag}
+        ViewTransition(name={`a-prod-name-${product.id}`} share="glide")
+          h3(className="m-0 text-4xl font-medium tracking-[-0.045em]") #{product.name}
+        ViewTransition(name={`a-prod-price-${product.id}`} share="glide")
+          span(className="font-mono text-lg") €#{product.price}
+        // Content that exists only on the detail page rises in after the morph.
+        ViewTransition(enter="rise" exit="fade")
+          div(className="flex flex-col gap-5")
+            p(className="m-0 text-sm leading-relaxed text-muted") #{product.blurb}
+            button(type="button" className="vt-btn self-start bg-accent text-white" style={{ borderColor: "transparent" }}) Add to bag
+
+module
+  interface ProductListProps {
+    open: (id: number | null) => void
+  }
+
+module
+  interface ListProps {
+    open: (id: number | null) => void
+  }
+
+component List
+  props { open }: ListProps
+  ul(className="m-0 grid list-none grid-cols-2 gap-3 p-0 md:grid-cols-4")
+    each item in PRODUCTS key item.id
+      li
+        button(type="button" className="vt-focus flex w-full cursor-pointer flex-col gap-2 border-0 bg-transparent p-0 text-left" onClick={() => open(item.id)})
+          ViewTransition(name={`a-prod-art-${item.id}`} share="morph")
+            div(className={`art ${item.art} aspect-[4/5] w-full rounded-[1.1rem]`})
+          ViewTransition(name={`a-prod-tag-${item.id}`} share="glide")
+            span(className='chip') #{item.tag}
+          ViewTransition(name={`a-prod-name-${item.id}`} share="glide")
+            span(className="text-base font-medium") #{item.name}
+          ViewTransition(name={`a-prod-price-${item.id}`} share="glide")
+            span(className="font-mono text-xs text-muted") €#{item.price}
+
+component ProductList
+  props { open }: ProductListProps
+  ViewTransition(enter="fade" exit="fade")
+    List(open={open})
+
+setup const [openId, setOpenId] = useState<number | null>(null);
+setup const product = PRODUCTS.find((item) => item.id === openId) ?? null;
+setup
+  const open = (id: number | null) => startTransition(() => {
+    addTransitionType(id === null ? "close" : "open");
+    setOpenId(id);
+  });
+
+div(className="w-full")
+  if product
+    // Four shared names, one per fact: image, name, price, tag.
+    ProductItem(product={product} open={open})
+  else
+    ProductList(open={open})

@@ -1,0 +1,29 @@
+import { ViewTransition, startTransition, useState } from "octane";
+module
+  type Tab = "work" | "studio" | "journal";
+  const TABS: Tab[] = ["work", "studio", "journal"];
+  const COPY: Record<Tab, string> = {
+    work: "Nine case studies, one idea: the interface should get out of the way.",
+    studio: "Twelve people between two cities. We ship on Thursdays.",
+    journal: "Notes on motion, accessibility, and the art of doing less."
+  };
+
+setup const [tab, setTab] = useState<Tab>("work");
+
+div(className="w-full max-w-lg")
+  nav(role="tablist" aria-label="Sections" className="flex gap-8 border-b border-line")
+    each t in TABS key t
+      button(
+        ~ type="button"
+        ~ role="tab"
+        ~ aria-selected={tab === t}
+        ~ className={`vt-focus relative cursor-pointer border-0 bg-transparent pb-4 text-2xl tracking-[-0.03em] transition-colors ${tab === t ? "text-ink" : "text-muted hover:text-ink"}`}
+        ~ onClick={() => startTransition(() => setTab(t))}
+        ~ )
+        | #{t}
+        if tab === t
+          // Same name, new parent: the underline is *shared* across buttons.
+          ViewTransition(name="b-tab-underline" share="glide")
+            span(className="absolute inset-x-0 -bottom-px block h-0.5 bg-accent")
+  ViewTransition(name="b-tab-panel" update="fade")
+    p(className="m-0 min-h-20 pt-6 text-lg leading-relaxed text-muted whitespace-nowrap") #{COPY[tab]}

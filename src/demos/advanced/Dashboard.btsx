@@ -1,0 +1,58 @@
+import { ViewTransition, startTransition, useState } from "octane";
+module
+  type Layout = "grid" | "list";
+  interface Widget { id: string; label: string; value: string; delta: string }
+  const WIDGETS: Widget[] = [
+    { id: "visits", label: "visits", value: "48.2k", delta: "+12%" },
+    { id: "orders", label: "orders", value: "1,904", delta: "+4%" },
+    { id: "aov", label: "avg. order", value: "€86", delta: "−1%" },
+    { id: "nps", label: "nps", value: "71", delta: "+6" }
+  ];
+  const NAV = [{ icon: "◐", label: "overview" }, { icon: "▤", label: "reports" }, { icon: "◎", label: "goals" }];
+
+  // Wait for the running document transition to finish before starting the
+  // next phase, so each phase gets its own complete animation.
+  async function settle() {
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    const active = (document as Document & { activeViewTransition?: { finished: Promise<void> } | null }).activeViewTransition;
+    if (active) await active.finished.catch(() => {});
+    else await new Promise((resolve) => setTimeout(resolve, document.documentElement.classList.contains("slowmo") ? 1900 : 480));
+  }
+
+setup const [layout, setLayout] = useState<Layout>("grid");
+setup const [collapsed, setCollapsed] = useState(false);
+setup const [phase, setPhase] = useState("idle");
+setup
+  // Three transitions, run in sequence: make room, reflow, restore.
+  const orchestrate = async (next: Layout) => {
+    if (next === layout || phase !== "idle") return;
+    startTransition(() => { setCollapsed(true); setPhase("1 · collapse sidebar"); });
+    await settle();
+    startTransition(() => { setLayout(next); setPhase("2 · reflow widgets"); });
+    await settle();
+    startTransition(() => { setCollapsed(false); setPhase("3 · restore sidebar"); });
+    await settle();
+    startTransition(() => setPhase("idle"));
+  };
+
+div(className="flex w-full flex-col gap-4")
+  div(className="flex flex-wrap items-center gap-2")
+    button.vt-btn(type="button" aria-pressed={layout === "grid"} disabled={phase !== "idle"} onClick={() => orchestrate("grid")}) grid
+    button.vt-btn(type="button" aria-pressed={layout === "list"} disabled={phase !== "idle"} onClick={() => orchestrate("list")}) list
+    ViewTransition(name="a-dash-phase" update="fade")
+      span(role="status" className="pl-2 font-mono text-xs text-muted") #{phase}
+  div(className="flex min-h-72 gap-3 rounded-[1.25rem] bg-paper p-3")
+    ViewTransition(name="a-dash-side" update="glide")
+      aside(className={`flex shrink-0 flex-col gap-1 overflow-hidden rounded-xl bg-panel-2 p-2 ${collapsed ? "w-12" : "w-28 sm:w-36"}`})
+        each item in NAV key item.label
+          div(className="flex items-center gap-3 rounded-lg px-2 py-2 text-sm")
+            span(className="w-4 text-center") #{item.icon}
+            if !collapsed
+              span #{item.label}
+    div(className={`grid flex-1 content-start gap-3 ${layout === "grid" ? "grid-cols-2" : "grid-cols-1"}`})
+      each widget in WIDGETS key widget.id
+        ViewTransition(name={`a-widget-${widget.id}`} update="glide")
+          article(className={`min-w-0 rounded-xl bg-panel-2 p-4 ${layout === "grid" ? "flex flex-col gap-3" : "flex items-baseline justify-between gap-3"}`})
+            span.eyebrow #{widget.label}
+            span(className={`font-medium tracking-[-0.04em] ${layout === "grid" ? "text-2xl sm:text-3xl" : "text-xl"}`}) #{widget.value}
+            span(className={`font-mono text-xs ${widget.delta.startsWith("+") ? "text-accent" : "text-muted"}`}) #{widget.delta}

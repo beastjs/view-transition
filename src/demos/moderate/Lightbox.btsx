@@ -1,0 +1,40 @@
+import { ViewTransition, startTransition, useEffect, useState } from "octane";
+module
+  interface Photo { id: number; art: string; caption: string }
+  const PHOTOS: Photo[] = [
+    { id: 1, art: "art-1", caption: "Signal, 2024 — pigment on dark" },
+    { id: 2, art: "art-2", caption: "Coastline study, dawn" },
+    { id: 3, art: "art-3", caption: "Conic bloom No. 3" },
+    { id: 4, art: "art-4", caption: "Horizon, overexposed" },
+    { id: 5, art: "art-5", caption: "Weave, blue hour" },
+    { id: 6, art: "art-6", caption: "Two suns, one frame" }
+  ];
+
+setup const [active, setActive] = useState<Photo | null>(null);
+setup const show = (photo: Photo | null) => startTransition(() => setActive(photo));
+setup
+  useEffect(() => {
+    if (active === null) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") show(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
+
+div(className="relative w-full max-w-lg")
+  div(className="grid grid-cols-3 gap-2")
+    each photo in PHOTOS key photo.id
+      if active?.id === photo.id
+        // Keep the slot so the grid does not jump while the photo is away.
+        div(className="aspect-square rounded-xl border border-dashed border-line")
+      else
+        ViewTransition(name={`m-photo-${photo.id}`} share="morph")
+          button.vt-focus(type="button" aria-label={`Open ${photo.caption}`} className={`art ${photo.art} aspect-square cursor-zoom-in rounded-xl border-0`} onClick={() => show(photo)})
+  if active
+    div(className="absolute -inset-3 z-10 flex cursor-zoom-out flex-col gap-3 rounded-[1.5rem] bg-panel p-3" onClick={() => show(null)})
+      ViewTransition(name={`m-photo-${active.id}`} share="morph")
+        div(className={`art ${active.art} min-h-0 flex-1 rounded-[1.1rem]`})
+      ViewTransition(enter="rise" exit="fade")
+        p(className="m-0 flex justify-between px-1 text-sm") #{active.caption}
+          span(className="text-muted") esc · click

@@ -1,0 +1,40 @@
+import { ViewTransition, addTransitionType, startTransition, useState } from "octane";
+module
+  interface Route { path: string; title: string; body: string; art: string }
+  const ROUTES: Route[] = [
+    { path: "/", title: "Perfected simplicity", body: "We create and grow digital products people use every day.", art: "art-4" },
+    { path: "/work", title: "Selected work", body: "Nine projects across eCommerce, media and brand.", art: "art-1" },
+    { path: "/journal", title: "Journal", body: "How people behave in digital environments.", art: "art-2" },
+    { path: "/contact", title: "Let's talk", body: "Tell us what you are working on.", art: "art-3" }
+  ];
+  const ENTER = { forward: "slide-from-right", backward: "slide-from-left", default: "fade" };
+  const EXIT = { forward: "slide-to-left", backward: "slide-to-right", default: "fade" };
+
+setup const [index, setIndex] = useState(0);
+setup
+  // Direction is decided at the call site and handed to CSS as a transition type.
+  const go = (next: number) => {
+    if (next === index || next < 0 || next >= ROUTES.length) return;
+    startTransition(() => {
+      addTransitionType(next > index ? "forward" : "backward");
+      setIndex(next);
+    });
+  };
+
+div(className="w-full max-w-xl overflow-hidden rounded-[1.25rem] border border-line bg-paper")
+  div(className="flex items-center gap-3 border-b px-4 py-3 border-line")
+    button.vt-focus(type="button" aria-label="Back" className="cursor-pointer border-0 bg-transparent text-muted hover:text-ink disabled:opacity-30" disabled={index === 0} onClick={() => go(index - 1)}) ←
+    button.vt-focus(type="button" aria-label="Forward" className="cursor-pointer border-0 bg-transparent text-muted hover:text-ink disabled:opacity-30" disabled={index === ROUTES.length - 1} onClick={() => go(index + 1)}) →
+    ViewTransition(name="m-route-url" update="fade")
+      code(className="flex-1 truncate rounded-full bg-panel-2 px-4 py-1.5 font-mono text-xs text-muted") okc.media#{ROUTES[index].path}
+  nav(className="flex gap-5 px-5 pt-4 text-sm")
+    each route, i in ROUTES key route.path
+      button(type="button" aria-current={i === index ? "page" : undefined} className={`vt-focus cursor-pointer border-0 bg-transparent p-0 ${i === index ? "text-ink" : "text-muted hover:text-ink"}`} onClick={() => go(i)}) #{route.path === "/" ? "home" : route.path.slice(1)}
+  div(className="relative h-52")
+    each route in [ROUTES[index]] key route.path
+      ViewTransition(enter={ENTER} exit={EXIT})
+        section(className="absolute inset-0 grid grid-cols-[1fr_7rem] items-center gap-5 p-5")
+          div
+            h3(className="m-0 text-3xl font-medium tracking-[-0.04em]") #{route.title}
+            p(className="m-0 pt-2 text-sm text-muted") #{route.body}
+          div(className={`art ${route.art} aspect-square rounded-full`})

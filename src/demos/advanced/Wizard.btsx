@@ -1,0 +1,87 @@
+import { ViewTransition, addTransitionType, startTransition, useState } from "octane";
+module
+  interface Step { id: string; title: string; prompt: string; options: string[] }
+  const STEPS: Step[] = [
+    { id: "brief", title: "The brief", prompt: "What are we making?", options: ["website", "product", "brand"] },
+    { id: "audience", title: "Audience", prompt: "Who is it for?", options: ["shoppers", "readers", "teams"] },
+    { id: "tone", title: "Tone", prompt: "How should it feel?", options: ["calm", "bold", "playful"] },
+    { id: "launch", title: "Launch", prompt: "When does it ship?", options: ["this month", "this quarter", "no rush"] }
+  ];
+  const ENTER = { forward: "slide-from-right", backward: "slide-from-left", default: "none" };
+  const EXIT = { forward: "slide-to-left", backward: "slide-to-right", default: "none" };
+
+module
+  interface WizardListProps {
+    step: number
+    done: boolean
+  }
+
+component WizardList
+  props { step, done }: WizardListProps
+  ol(className="m-0 grid list-none grid-cols-4 gap-2 p-0")
+    each s, i in STEPS key s.id
+      li(className="relative flex flex-col gap-2")
+        span(className={`text-xs ${i <= step ? "text-ink" : "text-muted"}`}) #{i < step ? "✓" : String(i + 1).padStart(2, "0")} #{s.title}
+        div(className="relative h-1 rounded-full bg-panel-2")
+          if i === Math.min(step, STEPS.length - 1)
+            // One marker, shared across the four tracks.
+            ViewTransition(name="a-wiz-marker" share="glide")
+              span(className={`absolute inset-0 rounded-full ${done ? "bg-ink" : "bg-accent"}`})
+
+module
+  interface WizardSectionProps {
+    step: number
+    answers: Record<string, string>
+    choose: (id: string, option: string) => void
+  }
+
+module
+  interface WizardStepProps {
+    s: Step
+    answers: Record<string, string>
+    choose: (id: string, option: string) => void
+  }
+
+component WizardStep
+  props { s, answers, choose }: WizardStepProps
+  ViewTransition(enter={ENTER} exit={EXIT})
+    section(className="absolute inset-0 flex flex-col gap-4")
+      if s
+        fragment
+          h3(className="m-0 text-3xl font-medium tracking-[-0.04em]") #{s.prompt}
+          div(className="flex flex-wrap gap-2")
+            each option in s.options key option
+              button.vt-btn(type="button" aria-pressed={answers[s.id] === option} onClick={() => choose(s.id, option)}) #{option}
+      else
+        fragment
+          h3(className="m-0 text-3xl font-medium tracking-[-0.04em]") Brief ready.
+          p(className="m-0 text-sm leading-relaxed text-muted") A #{answers.tone ?? "calm"} #{answers.brief ?? "website"} for #{answers.audience ?? "shoppers"}, shipping #{answers.launch ?? "this quarter"}.
+
+component WizardSection
+  props { step, answers, choose }: WizardSectionProps
+  div(className="relative h-40")
+    each s in [STEPS[step] ?? null] key s?.id ?? "summary"
+      WizardStep(s={s} answers={answers} choose={choose})
+
+setup const [step, setStep] = useState(0);
+setup const [answers, setAnswers] = useState<Record<string, string>>({});
+setup
+  const go = (delta: number) => startTransition(() => {
+    addTransitionType(delta > 0 ? "forward" : "backward");
+    setStep((value) => Math.min(STEPS.length, Math.max(0, value + delta)));
+  });
+  const choose = (id: string, option: string) => setAnswers((current) => ({ ...current, [id]: option }));
+  const done = step === STEPS.length;
+
+div(className="flex w-full max-w-xl flex-col gap-6")
+  WizardList(step={step} done={done})
+  // The progress label morphs its width and text in one update.
+  ViewTransition(name="a-wiz-count" update="fade")
+    span(className="font-mono text-xs text-muted") #{done ? "complete" : `step ${step + 1} of ${STEPS.length}`}
+  WizardSection(step={step} answers={answers} choose={choose})
+  div(className="flex justify-between")
+    button.vt-btn(type="button" disabled={step === 0} onClick={() => go(-1)}) ← back
+    if done
+      button.vt-btn(type="button" onClick={() => startTransition(() => { addTransitionType("backward"); setStep(0); setAnswers({}); })}) start over
+    else
+      button.vt-btn(type="button" aria-pressed={true} onClick={() => go(1)}) #{step === STEPS.length - 1 ? "finish" : "continue →"}

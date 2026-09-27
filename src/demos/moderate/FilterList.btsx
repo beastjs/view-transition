@@ -1,0 +1,26 @@
+import { ViewTransition, startTransition, useState } from "octane";
+module
+  const FACES = ["Akzidenz", "Baskerville", "Caslon", "Didot", "Futura", "Garamond", "Gill Sans", "Helvetica", "Inter", "Jost", "Onest", "Univers"];
+  const slug = (value: string) => value.toLowerCase().replace(/\s+/g, "-");
+
+setup const [filter, setFilter] = useState("");
+setup const shown = FACES.filter((face) => face.toLowerCase().includes(filter.trim().toLowerCase()));
+
+div(className="w-full max-w-md")
+  label(className="flex items-center gap-3 rounded-full border border-line px-5 py-3 focus-within:border-ink")
+    span(className="text-muted") ⌕
+    // Uncontrolled on purpose: the browser owns the text, so each keystroke
+    // only schedules the list update — and that one runs as a transition.
+    input(
+      ~ placeholder="filter typefaces…"
+      ~ aria-label="Filter typefaces"
+      ~ className="w-full border-0 bg-transparent text-base outline-none placeholder:text-muted"
+      ~ onInput={(event) => { const next = event.currentTarget.value; startTransition(() => setFilter(next)); }}
+      ~ )
+  ul(className="m-0 flex min-h-56 list-none flex-wrap content-start gap-2 p-0 pt-5")
+    each face in shown key face
+      ViewTransition(name={`m-face-${slug(face)}`} enter="rise" exit="sink" update="glide")
+        li(className="rounded-full bg-panel-2 px-4 py-2 text-sm") #{face}
+    empty
+      ViewTransition(enter="fade" exit="fade")
+        li(className="py-2 text-sm text-muted") No typeface matches “#{filter}”.

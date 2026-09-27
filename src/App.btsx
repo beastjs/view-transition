@@ -1,0 +1,156 @@
+import { ViewTransition, addTransitionType, startTransition, useEffect, useState } from "octane";
+import DemoFrame from "./components/DemoFrame.btsx";
+import { DEMO_COUNT, TIERS } from "./demos";
+import type { Tier, TierId } from "./demos";
+import { ThemeContext, revealTheme } from "./lib/theme";
+import type { Theme } from "./lib/theme";
+module
+  const ORDER: TierId[] = TIERS.map((tier) => tier.id);
+  const ENTER = { forward: "tier-from-right", backward: "tier-from-left", default: "fade" };
+  const EXIT = { forward: "tier-to-left", backward: "tier-to-right", default: "fade" };
+  const WORDS = ["shared elements", "enter & exit", "directional routes", "suspense reveals", "choreography"];
+  const PRINCIPLES = [
+    { title: "No transition, no animation", body: "A boundary only animates updates started with startTransition, useTransition, actions, or a Suspense reveal." },
+    { title: "Names are unique", body: "Never render two visible boundaries with the same name. Suffix with an id: name={`hero-${id}`}." },
+    { title: "key vs name", body: "key decides enter and exit. name decides what is shared between the old tree and the new one." },
+    { title: "update vs share", body: "update: the same boundary changed. share: one unmounted and another mounted under the same name." },
+    { title: "Opt out, then in", body: "update=\"none\" on a wrapper keeps it still while nested boundaries animate on their own." },
+    { title: "Motion is optional", body: "Honour prefers-reduced-motion. Browsers without the API simply swap instantly — the fallback is free." }
+  ];
+  const LINKS = [
+    { label: "octane docs", href: "https://octanejs.dev/" },
+    { label: "beast docs", href: "https://beast-docs.vercel.app/" },
+    { label: "mdn · view transitions", href: "https://developer.mozilla.org/en-US/docs/Web/API/View_Transition_API" }
+  ];
+  const supportsViewTransitions = typeof document !== "undefined" && "startViewTransition" in document;
+
+component TierView
+  props { tier }: { tier: Tier }
+  section(aria-labelledby={`tier-${tier.id}-title`})
+    div(className="grid gap-6 pt-16 pb-10 lg:grid-cols-[minmax(0,4fr)_minmax(0,8fr)] lg:gap-14")
+      span(className="font-mono text-sm text-muted") #{tier.index} / 03
+      div
+        h2(id={`tier-${tier.id}-title`} className="m-0 text-[clamp(2.4rem,6vw,5.5rem)] font-medium leading-[0.95] tracking-[-0.06em]") #{tier.headline}
+        p(className="m-0 max-w-2xl pt-6 text-lg leading-relaxed text-muted") #{tier.intro}
+    each demo, index in tier.demos key demo.id
+      DemoFrame(demo={demo} number={`${tier.index}.${String(index + 1).padStart(2, "0")}`})
+
+setup const [tier, setTier] = useState<TierId>("basic");
+setup const [theme, setTheme] = useState<Theme>("dark");
+setup const [slowmo, setSlowmo] = useState(false);
+setup const themeState = { theme, setTheme };
+setup const activeTier = TIERS.find((item) => item.id === tier) ?? TIERS[0];
+setup
+  useEffect(() => {
+    document.documentElement.classList.toggle("light", theme === "light");
+  });
+  useEffect(() => {
+    document.documentElement.classList.toggle("slowmo", slowmo);
+  });
+  const selectTier = (next: TierId) => {
+    if (next === tier) return;
+    const anchor = document.getElementById("tiers");
+    if (anchor !== null && anchor.getBoundingClientRect().top < 0) anchor.scrollIntoView({ behavior: "instant" });
+    startTransition(() => {
+      addTransitionType(ORDER.indexOf(next) > ORDER.indexOf(tier) ? "forward" : "backward");
+      setTier(next);
+    });
+  };
+
+ThemeContext(value={themeState})
+  div(className={`shell ${theme} min-h-screen bg-paper text-ink`})
+    a(href="#tiers" className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-full focus:bg-ink focus:px-4 focus:py-2 focus:text-paper") Skip to examples
+
+    header(className="fixed inset-x-0 top-0 z-40 flex items-center justify-between gap-6 bg-linear-to-b from-paper from-55% to-transparent px-5 py-4 sm:px-10")
+      a(href="#top" className="vt-focus flex items-center gap-3 text-ink no-underline")
+        span(className="grid size-9 place-items-center rounded-full bg-ink text-sm font-semibold text-paper") vt
+        span(className="hidden text-sm leading-tight sm:block") view/transition
+          br
+          span(className="text-muted") octane · beast
+      nav(aria-label="Tiers" className="hidden items-center gap-7 text-[1.05rem] md:flex")
+        each item in TIERS key item.id
+          a(href="#tiers" className={`vt-focus no-underline transition-colors ${tier === item.id ? "text-ink" : "text-muted hover:text-ink"}`} onClick={() => selectTier(item.id)}) #{item.label}
+        a(href="#principles" className="vt-focus text-muted no-underline hover:text-ink") principles
+      div(className="flex items-center gap-3")
+        button.vt-btn(type="button" aria-pressed={slowmo} title="Slow every view transition down" onClick={() => setSlowmo((value) => !value)}) slow-mo
+        button.vt-focus(
+          ~ type="button"
+          ~ aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}
+          ~ className="grid size-20 cursor-pointer place-items-center rounded-full border-0 bg-panel-2 text-xs leading-tight text-ink transition-transform hover:scale-105 sm:size-24"
+          ~ onClick={(event) => revealTheme(themeState, event)}
+          ~ )
+          ViewTransition(name="theme-toggle-label" update="fade")
+            span #{theme === "dark" ? "lights on" : "lights off"}
+
+    main#top
+      section(className="flex min-h-[94vh] flex-col justify-end px-5 pt-36 pb-14 sm:px-10")
+        p(className="eyebrow m-0 pb-8") view transitions in octane 0.4 · written in beast
+        h1(className="m-0 text-[clamp(3.6rem,13vw,13rem)] font-medium leading-[0.86] tracking-[-0.07em]")
+          span(className="block") Perfected
+          span(className="block pl-[0.6em] text-muted") transitions
+        div(className="grid gap-10 pt-14 md:grid-cols-[1fr_auto] md:items-end")
+          p(className="m-0 max-w-2xl text-[clamp(1.2rem,2vw,1.8rem)] leading-snug tracking-[-0.02em]")
+            | Declarative motion for
+            span.rotator(aria-hidden="true" className="ml-[0.28em]")
+              each word in WORDS key word
+                span(className="text-accent") #{word}
+            span(className="sr-only") #{WORDS.join(", ")}
+            br
+            span(className="text-muted") #{DEMO_COUNT} live examples, three tiers, one component.
+          div(className="flex items-end gap-6")
+            p(className="m-0 max-w-44 text-sm leading-snug text-muted")
+              if supportsViewTransitions
+                span since React 19 — now native in Octane.
+              else
+                span This browser lacks the View Transitions API; every demo still works, it just swaps instantly.
+            a(href="#tiers" className="vt-focus grid size-28 shrink-0 place-items-center rounded-full border border-line text-sm text-ink no-underline transition-colors hover:bg-ink hover:text-paper") explore ↓
+
+      section#tiers(className="scroll-mt-0 px-5 sm:px-10")
+        nav(aria-label="Complexity tiers" className="sticky top-0 z-30 -mx-5 flex gap-8 border-b border-line bg-paper/85 px-5 pt-28 backdrop-blur-xl sm:-mx-10 sm:gap-14 sm:px-10")
+          each item in TIERS key item.id
+            button(
+              ~ type="button"
+              ~ aria-current={tier === item.id ? "page" : undefined}
+              ~ className={`vt-focus relative flex cursor-pointer items-baseline gap-2 border-0 bg-transparent px-0 pb-5 transition-colors ${tier === item.id ? "text-ink" : "text-muted hover:text-ink"}`}
+              ~ onClick={() => selectTier(item.id)}
+              ~ )
+              span(className="font-mono text-xs") #{item.index}
+              span(className="text-[clamp(1.3rem,3vw,2.4rem)] tracking-[-0.04em]") #{item.label}
+              span(className="hidden font-mono text-xs sm:inline") (#{item.demos.length})
+              if tier === item.id
+                ViewTransition(name="tier-underline" share="glide")
+                  span(className="absolute inset-x-0 -bottom-px block h-0.5 bg-accent")
+        // Each tier is keyed, so switching is a real exit + enter; the type set
+        // in selectTier() picks the direction. update="none" keeps the tier
+        // still while the demos inside it animate.
+        each current in [activeTier] key current.id
+          ViewTransition(enter={ENTER} exit={EXIT} update="none")
+            div
+              TierView(tier={current})
+
+      section#principles(className="scroll-mt-24 border-t border-line px-5 py-24 sm:px-10")
+        div(className="grid gap-6 pb-14 lg:grid-cols-[minmax(0,4fr)_minmax(0,8fr)] lg:gap-14")
+          span.eyebrow principles
+          p(className="m-0 max-w-3xl text-[clamp(1.6rem,3vw,2.6rem)] leading-[1.1] tracking-[-0.04em]") Six rules that cover almost every bug you will hit with view transitions.
+        ol(className="m-0 grid list-none gap-px overflow-hidden rounded-[1.75rem] bg-line p-0 sm:grid-cols-2 lg:grid-cols-3")
+          each rule, index in PRINCIPLES key rule.title
+            li(className="flex min-h-56 flex-col gap-4 bg-paper p-7")
+              span(className="font-mono text-xs text-muted") #{String(index + 1).padStart(2, "0")}
+              h3(className="m-0 text-xl font-medium tracking-[-0.03em]") #{rule.title}
+              p(className="m-0 text-sm leading-relaxed text-muted") #{rule.body}
+
+    footer(className="border-t border-line px-5 pt-24 pb-10 sm:px-10")
+      div(className="grid gap-10 md:grid-cols-[1fr_auto] md:items-end")
+        div
+          p(className="m-0 text-[clamp(2.6rem,8vw,7.5rem)] font-medium leading-[0.9] tracking-[-0.065em]") Have a transition
+            br
+            | in mind?
+          p(className="m-0 max-w-lg pt-8 text-lg leading-relaxed text-muted") Every example on this page is a single .btsx file under src/demos. Open the source tab, copy it, and make it yours.
+        a(href="#top" className="vt-focus grid size-36 place-items-center rounded-full bg-accent text-center text-base leading-tight text-white no-underline transition-transform hover:scale-105") back to
+          br
+          | the top
+      div(className="mt-20 flex flex-wrap items-center justify-between gap-6 border-t border-line pt-6 text-sm text-muted")
+        span view/transition — octane 0.4.3 · beast 0.4.3
+        nav(className="flex flex-wrap gap-6" aria-label="Resources")
+          each link in LINKS key link.href
+            a(href={link.href} target="_blank" rel="noopener noreferrer" className="vt-focus text-muted no-underline hover:text-ink") #{link.label} ↗

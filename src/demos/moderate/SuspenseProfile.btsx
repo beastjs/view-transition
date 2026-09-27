@@ -1,0 +1,59 @@
+import { ViewTransition, use, useState, useTransition } from "octane";
+module
+  interface Profile { id: number; name: string; role: string; city: string; art: string; projects: number }
+  const PROFILES: Profile[] = [
+    { id: 0, name: "Mira Okafor", role: "Design director", city: "Lisbon", art: "art-3", projects: 42 },
+    { id: 1, name: "Jun Takeda", role: "Creative engineer", city: "Osaka", art: "art-2", projects: 57 },
+    { id: 2, name: "Alba Ruiz", role: "Strategy lead", city: "Valencia", art: "art-1", projects: 31 }
+  ];
+  const cache = new Map<string, Promise<Profile>>();
+  // Every click gets a fresh request so the pending state is visible each time.
+  function fetchProfile(id: number, request: number): Promise<Profile> {
+    const key = `${id}:${request}`;
+    let pending = cache.get(key);
+    if (pending === undefined) {
+      pending = new Promise((resolve) => setTimeout(() => resolve(PROFILES[id]), 900));
+      cache.set(key, pending);
+    }
+    return pending;
+  }
+
+component ProfileCard
+  props { id, request }: { id: number; request: number }
+  setup const profile = use(fetchProfile(id, request));
+  article(className="flex items-center gap-5 rounded-[1.5rem] bg-panel-2 p-5")
+    div(className={`art ${profile.art} size-20 shrink-0 rounded-full`})
+    div(className="min-w-0")
+      h3(className="m-0 text-2xl font-medium tracking-[-0.03em]") #{profile.name}
+      p(className="m-0 pt-1 text-sm text-muted") #{profile.role} · #{profile.city}
+      p(className="m-0 pt-3 font-mono text-xs text-muted") #{profile.projects} projects shipped
+
+component ProfileSkeleton
+  article(aria-busy="true" className="flex items-center gap-5 rounded-[1.5rem] bg-panel-2 p-5")
+    div(className="size-20 shrink-0 animate-pulse rounded-full bg-panel")
+    div(className="flex flex-1 flex-col gap-2")
+      div(className="h-6 w-40 animate-pulse rounded-full bg-panel")
+      div(className="h-4 w-28 animate-pulse rounded-full bg-panel")
+
+setup const [selected, setSelected] = useState(0);
+setup const [request, setRequest] = useState(0);
+setup const [isPending, startTransition] = useTransition();
+setup
+  const open = (id: number) => startTransition(() => {
+    setSelected(id);
+    setRequest((value) => value + 1);
+  });
+
+div(className="flex w-full max-w-md flex-col gap-5")
+  div(className="flex flex-wrap gap-2")
+    each profile in PROFILES key profile.id
+      button.vt-btn(type="button" aria-pressed={selected === profile.id} onClick={() => open(profile.id)}) #{profile.name.split(" ")[0]}
+  // The boundary sits *outside* the suspense arm: the old card is held until
+  // the new one resolves, then the two are morphed in a single transition.
+  div(className={`transition-opacity duration-300 ${isPending ? "opacity-50" : "opacity-100"}`})
+    ViewTransition(name="m-profile" update="glide")
+      try
+        ProfileCard(id={selected} request={request})
+      pending
+        ProfileSkeleton
+  p(role="status" className="m-0 font-mono text-xs text-muted") #{isPending ? "fetching… old UI stays interactive" : "idle"}

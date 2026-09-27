@@ -1,0 +1,27 @@
+import { ViewTransition, startTransition, useRef, useState } from "octane";
+module
+  interface Toast { id: number; text: string }
+  const MESSAGES = ["Draft saved", "Invite sent to Ada", "Build passed", "3 new comments", "Deployed to preview", "Asset uploaded"];
+
+setup const [toasts, setToasts] = useState<Toast[]>([{ id: 2, text: "Build passed" }, { id: 1, text: "Draft saved" }]);
+setup const nextId = useRef(3);
+setup
+  const push = () => {
+    const id = nextId.current++;
+    const text = MESSAGES[id % MESSAGES.length];
+    startTransition(() => setToasts((list) => [{ id, text }, ...list].slice(0, 4)));
+  };
+  const dismiss = (id: number) => startTransition(() => setToasts((list) => list.filter((toast) => toast.id !== id)));
+
+div(className="flex w-full max-w-sm flex-col gap-5")
+  button(type="button" className="vt-btn self-start" onClick={push}) + notify
+  ul(className="m-0 flex min-h-64 list-none flex-col gap-2 p-0")
+    each toast in toasts key toast.id
+      // enter/exit use our springy "pop"; siblings glide into the gap.
+      ViewTransition(name={`b-toast-${toast.id}`} enter="pop" exit="pop" update="glide")
+        li(className="flex items-center justify-between gap-4 rounded-2xl bg-panel-2 py-3 pr-2 pl-5")
+          span(className="text-sm") #{toast.text}
+          button(type="button" aria-label={`Dismiss ${toast.text}`} className="vt-focus grid size-8 cursor-pointer place-items-center rounded-full border-0 bg-transparent text-muted hover:text-ink" onClick={() => dismiss(toast.id)}) ×
+    empty
+      ViewTransition(enter="fade" exit="fade")
+        li(className="py-3 text-sm text-muted") All caught up.

@@ -1,0 +1,30 @@
+{
+  "name": "view-transition",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "dev:devtools": "BEAST_DEVTOOLS=1 vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsrx-tsc --noEmit",
+    "check": "bun run typecheck && bun run build"
+  },
+  "dependencies": {
+    "@beastjs/devtools": "^0.1.7",
+    "@octanejs/radix": "0.1.55",
+    "beast-tsrx": "0.6.0",
+    "clsx": "^2.1.1",
+    "octane": "0.6.0",
+    "tailwind-merge": "^3.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "@tsrx/typescript-plugin": "0.3.135",
+    "typescript": "^5.9.3",
+    "tailwindcss": "^4.3.3",
+    "vite": "^8.0.16",
+    "@tailwindcss/vite": "^4.3.3"
+  }
+}

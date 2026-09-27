@@ -1,0 +1,16 @@
+import { ViewTransition, use } from "octane";
+import { ThemeContext, revealTheme } from "@/lib/theme";
+
+setup const theme = use(ThemeContext);
+
+div(className="flex flex-col items-center gap-6 text-center")
+  button.vt-focus(
+    ~ type="button"
+    ~ className="grid size-44 cursor-pointer place-items-center rounded-full border-0 bg-ink text-paper transition-transform hover:scale-105"
+    ~ onClick={(event) => revealTheme(theme, event)}
+    ~ )
+    // A named boundary that changes gives Octane something to animate; the
+    // `theme` type then promotes the whole-page root snapshot to a reveal.
+    ViewTransition(name="a-theme-label" update="fade")
+      span(className="text-lg font-medium leading-tight") #{theme.theme === "dark" ? "let there be light" : "back to dark"}
+  p(className="m-0 max-w-xs text-sm text-muted") The circle opens from wherever you click — the entire page is the snapshot.

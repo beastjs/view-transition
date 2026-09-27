@@ -1,0 +1,28 @@
+import { ViewTransition, startTransition, useState } from "octane";
+module
+  type SortKey = "joined" | "name" | "role";
+  interface Person { id: number; name: string; role: string; joined: number }
+  const PEOPLE: Person[] = [
+    { id: 1, name: "Mira Okafor", role: "design", joined: 2014 },
+    { id: 2, name: "Jun Takeda", role: "engineering", joined: 2019 },
+    { id: 3, name: "Alba Ruiz", role: "strategy", joined: 2011 },
+    { id: 4, name: "Theo Laine", role: "motion", joined: 2022 },
+    { id: 5, name: "Sana Iqbal", role: "research", joined: 2016 }
+  ];
+  const KEYS: SortKey[] = ["joined", "name", "role"];
+
+setup const [sortKey, setSortKey] = useState<SortKey>("joined");
+setup const sorted = [...PEOPLE].sort((a, b) => sortKey === "joined" ? a.joined - b.joined : a[sortKey].localeCompare(b[sortKey]));
+
+div(className="w-full max-w-md")
+  div(className="flex flex-wrap gap-2 pb-5")
+    each option in KEYS key option
+      button.vt-btn(type="button" aria-pressed={sortKey === option} onClick={() => startTransition(() => setSortKey(option))}) #{option}
+  ol(className="m-0 flex list-none flex-col p-0")
+    each person, index in sorted key person.id
+      // A stable name per row lets the browser track each one to its new slot.
+      ViewTransition(name={`b-row-${person.id}`} update="glide")
+        li(className="grid grid-cols-[2rem_1fr_auto] items-baseline gap-3 border-b border-line py-3")
+          span(className="font-mono text-xs text-muted") #{String(index + 1).padStart(2, "0")}
+          span(className="text-lg tracking-[-0.02em]") #{person.name}
+          span(className="text-sm text-muted") #{person.role} · #{person.joined}

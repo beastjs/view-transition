@@ -1,0 +1,17 @@
+import { ViewTransition, addTransitionType, startTransition, useState } from "octane";
+
+setup const [count, setCount] = useState(0);
+setup
+  // The transition *type* picks the class: roll up on +, roll down on −.
+  const step = (delta: number) => {
+    startTransition(() => {
+      addTransitionType(delta > 0 ? "up" : "down");
+      setCount((value) => value + delta);
+    });
+  };
+
+div(className="flex items-center gap-8")
+  button(type="button" aria-label="Decrement" className="vt-btn size-14 text-2xl" onClick={() => step(-1)}) −
+  ViewTransition(name="b-count" update={{ up: "roll-up", down: "roll-down", default: "none" }})
+    span(className="min-w-[2ch] text-center text-[clamp(4rem,12vw,8rem)] font-medium leading-none tracking-[-0.06em] tabular-nums") #{count}
+  button(type="button" aria-label="Increment" className="vt-btn size-14 text-2xl" onClick={() => step(1)}) +

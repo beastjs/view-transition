@@ -1,0 +1,54 @@
+import { ViewTransition, startTransition, useState } from "octane";
+import type { ViewTransitionInstance } from "octane";
+module
+  type Status = "todo" | "doing" | "done";
+  type SortKey = "priority" | "title";
+  interface Task { id: number; title: string; priority: 1 | 2 | 3; status: Status }
+  const COLUMNS: Status[] = ["todo", "doing", "done"];
+  const NEXT: Record<Status, Status> = { todo: "doing", doing: "done", done: "todo" };
+  const SEED: Task[] = [
+    { id: 1, title: "Audit focus order", priority: 3, status: "todo" },
+    { id: 2, title: "Hero type scale", priority: 2, status: "doing" },
+    { id: 3, title: "Case study copy", priority: 1, status: "todo" },
+    { id: 4, title: "Reduced-motion pass", priority: 3, status: "doing" },
+    { id: 5, title: "OG images", priority: 1, status: "done" },
+    { id: 6, title: "Checkout states", priority: 2, status: "todo" }
+  ];
+
+  // The instance API: every pseudo-element animation this boundary owns is
+  // delayed by its position, turning one layout change into a cascade.
+  function stagger(instance: ViewTransitionInstance, index: number) {
+    for (const part of [instance.group, instance.old, instance.new]) {
+      for (const animation of part.getAnimations()) {
+        animation.effect?.updateTiming({ delay: index * 45, fill: "both" });
+      }
+    }
+  }
+
+setup const [tasks, setTasks] = useState<Task[]>(SEED);
+setup const [sortKey, setSortKey] = useState<SortKey>("priority");
+setup
+  const ordered = (status: Status) => tasks
+    .filter((task) => task.status === status)
+    .sort((a, b) => sortKey === "priority" ? b.priority - a.priority : a.title.localeCompare(b.title));
+  const advance = (id: number) => startTransition(() => {
+    setTasks((list) => list.map((task) => task.id === id ? { ...task, status: NEXT[task.status] } : task));
+  });
+
+div(className="w-full")
+  div(className="flex flex-wrap items-center gap-2 pb-5")
+    span.eyebrow(className="pr-2") sort
+    button.vt-btn(type="button" aria-pressed={sortKey === "priority"} onClick={() => startTransition(() => setSortKey("priority"))}) priority
+    button.vt-btn(type="button" aria-pressed={sortKey === "title"} onClick={() => startTransition(() => setSortKey("title"))}) title
+  div(className="grid grid-cols-1 gap-3 sm:grid-cols-3")
+    each status in COLUMNS key status
+      section(className="flex min-h-64 flex-col gap-2 rounded-[1.25rem] bg-paper p-3")
+        header(className="flex items-center justify-between px-2 pb-1")
+          span.eyebrow #{status}
+          span(className="font-mono text-xs text-muted") #{tasks.filter((task) => task.status === status).length}
+        each task, index in ordered(status) key task.id
+          ViewTransition(name={`a-task-${task.id}`} update="glide" onUpdate={(instance) => stagger(instance, index)})
+            button.vt-focus(type="button" className="flex w-full cursor-pointer items-center gap-3 rounded-xl border-0 bg-panel-2 px-3 py-3 text-left hover:bg-panel" onClick={() => advance(task.id)})
+              span(aria-label={`priority ${task.priority}`} className="font-mono text-xs text-accent") #{"●".repeat(task.priority)}
+              span(className="flex-1 text-sm") #{task.title}
+              span(className="text-muted") →

@@ -1,0 +1,61 @@
+import { ViewTransition, addTransitionType, startTransition, useRef, useState } from "octane";
+module
+  type Direction = "left" | "right";
+  interface Card { title: string; place: string; art: string }
+  const DECK: Card[] = [
+    { title: "Lisbon", place: "Portugal", art: "art-3" },
+    { title: "Osaka", place: "Japan", art: "art-2" },
+    { title: "Reykjavík", place: "Iceland", art: "art-4" },
+    { title: "Oaxaca", place: "Mexico", art: "art-1" },
+    { title: "Tbilisi", place: "Georgia", art: "art-6" }
+  ];
+  const THRESHOLD = 90;
+  const FLING = { left: "fling-left", right: "fling-right", default: "fade" };
+
+setup const [top, setTop] = useState(0);
+setup const [dx, setDx] = useState(0);
+setup const [kept, setKept] = useState(0);
+setup const startX = useRef<number | null>(null);
+setup
+  // `top` is an ever-increasing position, so each card keeps a unique key and
+  // leaving the deck is a real unmount — which is what triggers `exit`.
+  const visible = [0, 1, 2].map((offset) => ({ position: top + offset, card: DECK[(top + offset) % DECK.length] }));
+  const dismiss = (direction: Direction) => startTransition(() => {
+    addTransitionType(direction);
+    if (direction === "right") setKept((value) => value + 1);
+    setTop((value) => value + 1);
+    setDx(0);
+  });
+  const onDown = (event: PointerEvent) => {
+    startX.current = event.clientX;
+    (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
+  };
+  const onMove = (event: PointerEvent) => {
+    if (startX.current !== null) setDx(event.clientX - startX.current);
+  };
+  const onUp = () => {
+    startX.current = null;
+    if (Math.abs(dx) > THRESHOLD) dismiss(dx > 0 ? "right" : "left");
+    else setDx(0);
+  };
+
+div(className="flex w-full flex-col items-center gap-6")
+  div(className="relative h-72 w-56")
+    each item in visible key item.position
+      ViewTransition(name={`a-deck-${item.position}`} exit={FLING} enter="fade" update="glide")
+        article(
+          ~ className={`art ${item.card.art} absolute inset-0 flex touch-none flex-col justify-end rounded-[1.5rem] p-5 text-white shadow-[0_24px_48px_rgba(0,0,0,0.35)] select-none ${item.position === top ? "cursor-grab active:cursor-grabbing" : ""}`}
+          ~ style={item.position === top
+          ~   ? { transform: `translateX(${dx}px) rotate(${dx / 14}deg)`, transition: startX.current === null ? "transform 240ms ease" : "none", zIndex: 3 }
+          ~   : { transform: `translateY(${(item.position - top) * 14}px) scale(${1 - (item.position - top) * 0.06})`, zIndex: 3 - (item.position - top) }}
+          ~ onPointerDown={item.position === top ? onDown : undefined}
+          ~ onPointerMove={item.position === top ? onMove : undefined}
+          ~ onPointerUp={item.position === top ? onUp : undefined}
+          ~ onPointerCancel={item.position === top ? onUp : undefined}
+          ~ )
+          h3(className="m-0 text-3xl font-medium tracking-[-0.04em]") #{item.card.title}
+          p(className="m-0 text-sm opacity-80") #{item.card.place}
+  div(className="flex items-center gap-3")
+    button.vt-btn(type="button" onClick={() => dismiss("left")}) ← skip
+    span(className="min-w-16 text-center font-mono text-xs text-muted") kept #{kept}
+    button.vt-btn(type="button" onClick={() => dismiss("right")}) keep →
