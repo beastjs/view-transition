@@ -16,6 +16,7 @@
   --color-muted: var(--muted);
   --color-line: var(--line);
   --color-accent: var(--accent);
+  --color-octane: var(--octane);
 }
 
 /* ---------------------------------------------------------------------------
@@ -36,6 +37,7 @@
   --code-kw: #ff8a9b;
   --code-tag: #9cd0ff;
   --code-cmt: #6c6c68;
+  --octane: #ff415a;
 }
 
 :root.light,
@@ -51,6 +53,7 @@
   --code-kw: #c2183a;
   --code-tag: #1f5f9e;
   --code-cmt: #9b9b96;
+  --octane: #ff415a;
 }
 
 @layer base {
@@ -105,7 +108,7 @@
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    min-height: 2.75rem;
+    min-height: 44px;
     padding: 0 1.1rem;
     border: 1px solid var(--line);
     border-radius: 999px;

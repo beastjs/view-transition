@@ -43,7 +43,7 @@ div(className="w-full max-w-md")
       // A stable name per person lets it travel to its new slot, and the class
       // adds depth to the move.
       // The slot number belongs to the row, not the person, so it stays too.
-      li(className="grid grid-cols-[2rem_1fr] items-baseline gap-3 border-b border-line py-3")
+      li(className="grid grid-cols-[2rem_1fr] items-baseline gap-3 border-b border-line/80 border-dashed py-3")
         span(className="font-mono text-xs text-muted") #{String(index + 1).padStart(2, "0")}
         ViewTransition(name={`b-row-${person.id}`} update={moves[person.id] ?? "glide"})
           div(className="flex items-baseline justify-between gap-3")
