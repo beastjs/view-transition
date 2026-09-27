@@ -77,9 +77,9 @@ div(className="flex w-full flex-col gap-4")
   div(className="flex flex-wrap items-center gap-2")
     each option in LAYOUTS key option
       button.vt-btn(type="button" aria-pressed={layout === option} onClick={() => switchLayout(option)}) #{option}
-    span(className="mx-2 h-6 w-px bg-line")
-    button.vt-btn(type="button" aria-pressed={compact} aria-controls="a-dash-side" onClick={toggleCompact}) compact
-    span(className="ml-auto font-mono text-[0.68rem] text-muted") sample figures
+    span(className="mx-2 h-6 w-px bg-line md:inline hidden")
+    button.vt-btn(type="button" aria-pressed={compact} aria-controls="a-dash-side" onClick={toggleCompact} className='md:inline hidden') compact
+    span(className="ml-auto font-mono text-[0.68rem] text-muted md:inline hidden") sample figures
   // A fixed height that every view fills exactly, so switching never resizes the frame.
   div(className="flex h-76 gap-3 rounded-[1.25rem] bg-paper p-3")
     // Labels are always rendered and never wrap; the aside clips them, so they

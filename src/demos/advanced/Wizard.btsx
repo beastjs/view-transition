@@ -53,7 +53,7 @@ component WizardList
   ol(className="m-0 grid list-none grid-cols-4 gap-2 p-0")
     each s, i in STEPS key s.id
       li(className="relative flex flex-col gap-2")
-        span(className={`text-xs ${i <= step ? "text-ink" : "text-muted"}`}) #{i < step ? "✓" : String(i + 1).padStart(2, "0")} #{s.title}
+        span(className={`text-xs whitespace-nowrap ${i <= step ? "text-ink" : "text-muted"}`}) #{i < step ? "✓" : ' '} #{s.title}
         div(className="relative h-1 rounded-full bg-panel-2")
           if i === Math.min(step, STEPS.length - 1)
             // One marker, shared across the four tracks.
@@ -84,7 +84,7 @@ component WizardStep
     if s
       fragment
         ViewTransition(enter={QUESTION_IN} exit={QUESTION_OUT})
-          h3(className="m-0 text-3xl font-medium tracking-[-0.04em]") #{s.prompt}
+          h3(className="m-0 text-lg md:text-3xl font-medium tracking-[-0.04em]") #{s.prompt}
         div(className="flex flex-wrap gap-2")
           each option in s.options key option
             if answers[s.id] === option
@@ -100,7 +100,7 @@ component WizardStep
     else
       fragment
         ViewTransition(enter={QUESTION_IN} exit={QUESTION_OUT})
-          h3(className="m-0 text-3xl font-medium tracking-[-0.04em]") Brief ready.
+          h3(className="m-0 text-lg md:text-3xl font-medium tracking-[-0.04em]") Brief ready.
         ViewTransition(enter={CHOICE_IN} exit={CHOICE_OUT})
           p(className="m-0 text-sm leading-relaxed text-muted") A #{answers.tone ?? "calm"} #{answers.brief ?? "website"} for #{answers.audience ?? "shoppers"}, shipping #{answers.launch ?? "this quarter"}.
 
@@ -133,8 +133,8 @@ setup
   const choose = (id: string, option: string) => setAnswers((current) => ({ ...current, [id]: option }));
   const done = step === STEPS.length;
 
-div(className="grid w-full max-w-3xl gap-8 md:grid-cols-[minmax(0,1fr)_11rem]")
-  div(ref={column} className="flex min-w-0 flex-col gap-6")
+div(className="grid w-full max-w-xl md:max-w-3xl gap-6 md:gap-8 md:grid-cols-[minmax(0,1fr)_11rem]")
+  div(ref={column} className="flex min-w-0 flex-col gap-4 md:gap-6")
     WizardList(step={step} done={done})
     // Only the number rolls — up on continue, down on back — like the basic
     // counter, as the final beat of the transition.
@@ -159,11 +159,11 @@ div(className="grid w-full max-w-3xl gap-8 md:grid-cols-[minmax(0,1fr)_11rem]")
   // after the answer vanished on the left. The step title rises once the chip
   // is in (w5), and slides away first when going back.
   aside(className="flex flex-col")
-    ol(className="m-0 flex list-none flex-col gap-3 p-0")
+    ol(className="m-0 flex list-none md:flex-col -gap-2 md:gap-3 p-0")
       each s, i in STEPS key s.id
         if i < step && answers[s.id]
-          li(className="flex flex-col items-start gap-1.5")
+          li(className="flex flex-col items-start gap-1.5 md:scale-100 scale-70")
             ViewTransition(enter="slide-up w5" exit="slide-away")
-              span(className="text-xs text-muted") #{s.title}
+              span(className="text-sm text-muted pb-2") #{s.title}
             ViewTransition(enter={CHIP_IN} exit={CHIP_OUT})
               span(className="vt-btn cursor-default border-ink bg-ink text-paper") #{answers[s.id]}

@@ -1,14 +1,14 @@
 import { ViewTransition, addTransitionType, startTransition, useState } from "octane";
 module
-  type Tab = "work" | "studio" | "journal" | 'publish' | 'discuss' | 'teach';
-  const TABS: Tab[] = ["work", "studio", "journal", 'publish', 'discuss', 'teach'];
+  type Tab = "work" | "studio" | "journal" | 'publish' ;
+  const TABS: Tab[] = ["work", "studio", "journal", 'publish'];
   const COPY: Record<Tab, string> = {
     work: "Nine case studies, one idea: the interface should get out of the way.",
     studio: "Twelve people between two cities. We ship on Thursdays.",
     journal: "Notes on motion, accessibility, and the art of doing less.",
     publish: "When you're ready, go ahead and hit publish.",
-    discuss: "Enter a discourse about your work and its impact.",
-    teach: "Passing the knowledge you've accumulated is your greatest contribution.",
+    // discuss: "Enter a discourse about your work and its impact.",
+    // teach: "Passing the knowledge you've accumulated is your greatest contribution.",
   };
   // The panel drifts the way you travel: a tab to the right pushes content left.
   const PANEL = { forward: "nudge-forward", backward: "nudge-backward", default: "fade" };
@@ -23,7 +23,7 @@ setup
     });
   };
 
-div(className="w-full max-w-xl")
+div(className="w-full max-w-xs md:max-w-xl")
   nav(role="tablist" aria-label="Sections" className="flex gap-8 border-b border-line")
     each t in TABS key t
       button(
