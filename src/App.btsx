@@ -33,7 +33,7 @@ component DemoTabs
         span(className="text-sm sm:text-base") #{demo.title}
     // One indicator that slides between tabs — plain CSS, measured from the active tab.
     if box
-      span(aria-hidden="true" className="pointer-events-none absolute bottom-0 block h-0.5 bg-ink transition-[left,width] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]" style={{ left: `${box.left}px`, width: `${box.width}px` }})
+      span(aria-hidden="true" className="pointer-events-none absolute bottom-0 block h-0.5 bg-accent transition-[left,width] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]" style={{ left: `${box.left}px`, width: `${box.width}px` }})
 
 setup const [tier, setTier] = useState<TierId>("basic");
 setup const [theme, setTheme] = useState<Theme>("dark");
@@ -78,26 +78,23 @@ ThemeContext(value={themeState})
 
     header(className="vt-chrome-header fixed inset-x-0 top-0 z-40 flex items-center justify-between gap-6 bg-linear-to-b from-paper from-55% to-transparent px-5 py-4 sm:px-10")
       a(href="#top" className="vt-focus flex items-center gap-3 text-ink no-underline")
-        span(className="grid size-9 place-items-center rounded-full bg-ink text-sm font-semibold text-paper") vt
-        span(className="hidden text-sm leading-tight sm:block") view/transition
-          br
-          span(className="text-muted") beast · octane
+        span(className="grid size-9 place-items-center rounded-full bg-ink text-3xl font-bold text-paper") vt
       nav(aria-label="Tiers" className="hidden items-center gap-7 text-[1.05rem] md:flex")
         each item in TIERS key item.id
-          a(href="#tiers" className={`vt-focus no-underline transition-colors ${tier === item.id ? "text-ink" : "text-muted hover:text-ink"}`} onClick={() => selectTier(item.id)}) #{item.label}
+          a(href="#tiers" className={`vt-focus no-underline transition-colors font-semibold ${tier === item.id ? "text-accent/80" : "text-muted hover:text-ink"}`} onClick={() => selectTier(item.id)}) #{item.label}
       div(className="flex items-center gap-3")
         button.vt-btn(type="button" aria-pressed={slowmo} title="Slow every view transition down" onClick={() => setSlowmo((value) => !value)}) slow-mo
         button.vt-focus(
           ~ type="button"
           ~ aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}
-          ~ className="grid size-20 cursor-pointer place-items-center rounded-full border-0 bg-panel-2 text-xs leading-tight text-ink transition-transform hover:scale-105 sm:size-24"
+          ~ className="grid size-10 cursor-pointer place-items-center rounded-full border-0 bg-panel-2 text-xs leading-tight text-ink transition-transform hover:scale-105 sm:size-12"
           ~ onClick={(event) => revealTheme(themeState, event)}
           ~ )
           ViewTransition(name="theme-toggle-label" update="fade")
-            span #{theme === "dark" ? "lights on" : "lights off"}
+            span #{theme === "dark" ? "light" : "dark"}
 
     main#top
-      section(className="flex min-h-[94vh] flex-col justify-end px-5 pt-20 pb-18 sm:px-10")
+      section(className="flex min-h-[94vh] flex-col justify-end px-5 pt-16 pb-24 sm:px-10")
         h1(className="m-0 text-[clamp(3.6rem,13vw,13rem)] font-medium leading-[0.86] tracking-[-0.07em]")
           span(className="block") Perfected
           span(className="block pl-[0.6em] text-muted") transitions
@@ -109,7 +106,7 @@ ThemeContext(value={themeState})
                 span(className="text-accent") #{word}
             span(className="sr-only") #{WORDS.join(", ")}
             br
-            span(className="text-muted") #{DEMO_COUNT} live examples, three tiers, one component.
+            span(className="text-muted") #{DEMO_COUNT} live examples of beast & octane.
           div(className="flex items-end gap-6")
             p(className="hidden m-0 max-w-44 text-sm leading-snug text-muted")
               if supportsViewTransitions
