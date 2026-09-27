@@ -23,11 +23,11 @@
   "devDependencies": {
     "@beastjs/devtools": "^0.1.7",
     "@tailwindcss/vite": "^4.3.3",
-    "@tsrx/typescript-plugin": "0.3.135",
+    "@tsrx/typescript-plugin": "0.4.12",
     "@types/node": "^26.2.0",
     "tailwindcss": "^4.3.3",
     "typescript": "^5.9.3",
     "vite": "^8.0.16",
-    "wrangler": "^4.141.0"
+    "wrangler": "^4.142.0"
   }
 }

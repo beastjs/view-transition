@@ -10,7 +10,7 @@ setup
     });
   };
 
-div(className="flex items-center gap-8")
+div(className="flex items-center justify-center gap-8 w-full h-40")
   button(type="button" aria-label="Decrement" className="vt-btn size-14 text-2xl" onClick={() => step(-1)}) −
   ViewTransition(name="b-count" update={{ up: "roll-up", down: "roll-down", default: "none" }})
     span(className="min-w-[2ch] text-center text-[clamp(4rem,12vw,8rem)] font-medium leading-none tracking-[-0.06em] tabular-nums") #{count}

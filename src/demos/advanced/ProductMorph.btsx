@@ -50,7 +50,7 @@ component ProductItem
     div(className="relative")
       // The image grows out of its grid card as one cropped picture.
       ViewTransition(name={`a-prod-art-${product.id}`} share="grow round-20")
-        div(className={`art ${product.art} aspect-square md:aspect-[4/5] rounded-[1.25rem]`})
+        div(className={`art ${product.art}  aspect-[3/2] md:aspect-[4/5] rounded-[1.25rem]`})
       // "Add to bag" first paints an exact copy over the image (no visible
       // change), then moves the copy's name into the bag — so it can fly.
       if launching
@@ -58,7 +58,7 @@ component ProductItem
           div(className={`art ${product.art} absolute inset-0 rounded-[1.25rem]`})
     div(className="flex justify-between md:justify-start md:flex-col gap-4 py-2")
       ViewTransition(enter="fade" exit="fade")
-        button(type="button" className="vt-btn self-start md:inline hidden" onClick={() => open(null)}) ← all objects
+        button(type="button" className="vt-btn self-start md:inline hidden" onClick={() => open(null)}) ← back
       // Tag, name and price zoom between sizes as single crisp pieces of text;
       // w-fit keeps each box hugging its text so the zoom stays proportional.
       ViewTransition(name={`a-prod-tag-${product.id}`} share="text-zoom")
@@ -96,7 +96,7 @@ component List
           ViewTransition(name={`a-prod-tag-${item.id}`} share="text-zoom" enter="rise" exit="sink")
             span(className='hidden md:inline chip self-start') #{item.tag}
           ViewTransition(name={`a-prod-name-${item.id}`} share="text-zoom" enter="rise" exit="sink")
-            span(className="w-fit text-base font-medium") #{item.name}
+            span(className="hidden md:inline w-fit text-base font-medium") #{item.name}
           ViewTransition(name={`a-prod-price-${item.id}`} share="text-zoom" enter="rise" exit="sink")
             span(className="hidden md:inline w-fit font-mono text-xs text-muted") €#{item.price}
 
@@ -127,8 +127,12 @@ setup
 
 div(className="w-full")
   div(className="flex items-center justify-between pb-5")
-    span.eyebrow Products
-    // The bag bumps and its count rolls only when something lands in it.
+    if open
+      ViewTransition(enter="fade" exit="fade")
+        button(type="button" className="vt-btn self-start" onClick={() => open(null)}) ← back
+    else
+      span.eyebrow Products
+      // The bag bumps and its count rolls only when something lands in it.
     ViewTransition(name="a-bag" update={{ "add-to-bag": "bump", default: "none" }})
       div(className="flex items-center gap-2 rounded-full border border-line py-1 pr-4 pl-1")
         div(className="size-7")

@@ -207,6 +207,22 @@ export const TIERS: Tier[] = [
       })
     ]
   }
+  // {
+  //   id: 'hyper',
+  //   index: '04',
+  //   label: 'hyper',
+  //   headline: 'hyper transitions',
+  //   intro: 'Hyper transitions',
+  //   demos: [
+  //     demo('./hyper/MultiDimensional.btsx', MultiDimensional, {
+  //       id: 'multi-dimensional',
+  //       title: 'Multi-Dimensional',
+  //       blurb: 'Pan through space, zoom in, and move between time layers. Each card keeps its place as the scene changes.',
+  //       apis: ['4D navigation', 'keyed enter / exit', 'glide'],
+  //       origin: 'new'
+  //     })
+  //   ]
+  // }
 ]
 
 export const DEMO_COUNT = TIERS.reduce((total, tier) => total + tier.demos.length, 0)
