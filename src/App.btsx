@@ -89,22 +89,23 @@ ThemeContext(value={themeState})
         h1(className="m-0 text-[clamp(3.6rem,13vw,13rem)] font-medium leading-[0.86] tracking-[-0.07em]")
           span(className="block") Perfecting
           span(className="block pl-[0.6em] text-muted") transitions
-        div(className="grid gap-10 pt-20 md:grid-cols-[1fr_auto] md:items-end")
-          p(className="m-0 max-w-2xl text-[clamp(1.2rem,2vw,1.8rem)] leading-snug tracking-[-0.02em]")
+        div(className="grid md:gap-10 pt-20 md:grid-cols-[1fr_auto] md:items-end")
+          p(className="m-0 max-w-3xl text-[clamp(1rem,2vw,1.8rem)] leading-snug tracking-[-0.02em]")
             | Declarative motion for
             span.rotator(aria-hidden="true" className="ml-[0.28em]")
               each word in WORDS key word
                 span(className="text-accent") #{word}
             span(className="sr-only") #{WORDS.join(", ")}
             br
-            span(className="text-muted") #{DEMO_COUNT} live examples of
-              span(className='text-ink px-2') ViewTransition
-              span(className='') in
-                a(href='https://beast-docs-adv.beastjs.workers.dev')
-                  span(className='hover:text-ink px-2') beast
-                span &
-                a(href='https://octanejs.dev')
-                  span(className='hover:text-octane px-2') octane
+          p(className="text-muted whitespace-nowrap") #{DEMO_COUNT} live examples of
+            span(className='text-ink px-2') ViewTransition
+          div(className='hidden text-muted flex flex-col')
+            a(href='https://beast-docs-adv.beastjs.workers.dev')
+              span written in
+              span(className='hover:text-ink px-2') beast
+            a(href='https://octanejs.dev')
+              span compiled in
+              span(className='hover:text-octane px-2') octane
           div(className="flex items-end gap-6")
             p(className="hidden m-0 max-w-44 text-sm leading-snug text-muted")
               if supportsViewTransitions
