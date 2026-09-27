@@ -6,6 +6,7 @@ All notable changes to `view-transition` will be recorded here.
 
 ### Added
 
+- Cloudflare Workers static-assets configuration and local/deploy commands.
 - ViewTransition showcase site in the okc.media mood: charcoal/paper themes, large type, fixed header with a slow-mo switch and a circular theme toggle.
 - Sixteen live examples across three tiers (basic, moderate, advanced), each a self-contained `.btsx` file shown next to its highlighted source.
 - Directional tier switching driven by `addTransitionType`, with a shared underline.

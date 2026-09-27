@@ -10,6 +10,27 @@ bun install
 bun run dev
 ```
 
+## Deploy to Cloudflare
+
+This client-only Vite app deploys as a Cloudflare Worker with static assets.
+The Wrangler configuration serves the files from `dist` and returns
+`index.html` for direct navigation to client-side routes.
+
+```bash
+bun install --frozen-lockfile
+bun run cloudflare:dev  # build and serve through Wrangler locally
+bun run deploy          # typecheck, build, and deploy
+```
+
+On the first deploy, Wrangler prompts you to sign in to your Cloudflare
+account. The Worker name is `view-transition`; change `name` in
+`wrangler.jsonc` if that name is already in use in your account. The deployment
+URL is printed by Wrangler. Run `bun run deploy` again after future changes.
+
+This app does not require server-side environment variables. Vite embeds any
+`VITE_` variables into the browser bundle at build time, so do not put secrets
+in them.
+
 Sixteen live examples in three tiers. Every page section shows the example
 running next to its exact source:
 
